@@ -1,6 +1,6 @@
 # Student Registration Portal (Enterprise C# .NET 10 & MySQL)
 
-An enterprise-grade academic management system designed to handle university student registrations, courses, instructors, class scheduling, attendance tracking, grading, and academic holds. Built using **C# .NET 10 Web API**, **Entity Framework Core**, and **MySQL 8.4**.
+An enterprise-grade academic management system designed to handle university student registrations, courses, instructors, class scheduling, attendance tracking, grading, and academic holds. Built using **C# .NET 10 Web API**, **Native ADO.NET (MySqlConnector)**, and **MySQL 8.4**.
 
 ---
 
@@ -32,12 +32,15 @@ An enterprise-grade academic management system designed to handle university stu
 
 ## 1. Project Overview & Architecture
 
-The application adopts a **3-Tier / Domain-Driven Design (DDD)** architecture:
+The application adopts a **3-Tier / Domain-Driven Design (DDD)** architecture with **Pure ADO.NET**:
 
 ```mermaid
 graph TD
-    Client["Client / WebApp / Mobile Consumer"] -->|HTTP / JSON| API["ASP.NET Core 10 Web API (Controllers & Services)"]
-    API -->|Entity Framework Core / Stored Procedures| DB[("MySQL 8.4 Relational Database")]
+    Client["Client / WebApp / Mobile Consumer"] -->|HTTP / JSON| API["ASP.NET Core 10 Web API (Controllers)"]
+    API -->|Dependency Injection| Repos["Repository Layer (IStudentRepository, etc.)"]
+    Repos -->|Defensive ADO.NET & Extensions| DbAccess["ISqlDataAccess / IDbConnectionFactory"]
+    DbAccess -->|MySqlConnector Driver| DB[("MySQL 8.4 Database")]
+```
 
     subgraph "Core Domain Entities"
         Students["Students"]
