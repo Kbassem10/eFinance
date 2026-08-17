@@ -21,22 +21,23 @@ services:
       retries: 10
 
   # ==========================================
-  # ⏳ .NET 10 API Service (To be enabled later)
+  # .NET 10 API Service
   # ==========================================
-  # api:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   container_name: studentportal-api
-  #   restart: on-failure
-  #   environment:
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=StudentRegistrationPortal;User=root;Password=YourPassword123!;
-  #   ports:
-  #     - "5090:8080"
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: studentportal-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=StudentRegistrationPortal;User=root;Password=YourPassword123!;
+    ports:
+      - "5090:8080"
+    depends_on:
+      db:
+        condition: service_healthy
 
   # ==========================================
   # ⏳ WebApp Frontend Service (To be enabled later)

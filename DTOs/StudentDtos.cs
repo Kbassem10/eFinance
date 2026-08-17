@@ -34,8 +34,13 @@ public record CreateStudentDto
     public int StudentStatusId { get; init; } = 1; // Default: Active / Enrolled
     public string StudentNumber { get; init; } = string.Empty;
     public string FirstName { get; init; } = string.Empty;
+    public string? MiddleName { get; init; }
     public string LastName { get; init; } = string.Empty;
-    public string NationalId { get; init; } = string.Empty;
+    public string? NationalId { get; init; }
+    public DateOnly DateOfBirth { get; init; } = new DateOnly(2000, 1, 1);
+    public string? Gender { get; init; }
+    public string? PhoneNumber { get; init; }
+    public string? Address { get; init; }
     public DateOnly AdmissionDate { get; init; } = DateOnly.FromDateTime(DateTime.UtcNow);
 }
 
@@ -44,6 +49,9 @@ public record UpdateStudentDto
     public int DepartmentId { get; init; }
     public int StudentStatusId { get; init; }
     public string FirstName { get; init; } = string.Empty;
+    public string? MiddleName { get; init; }
     public string LastName { get; init; } = string.Empty;
+    public string? PhoneNumber { get; init; }
+    public string? Address { get; init; }
     public DateOnly AdmissionDate { get; init; }
 }

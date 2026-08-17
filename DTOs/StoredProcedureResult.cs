@@ -1,8 +1,5 @@
-namespace StudentRegistrationPortal.Api.Data;
+namespace StudentRegistrationPortal.Api.DTOs;
 
-/// <summary>
-/// Encapsulates the output state from Stored Procedures implementing the ProcessingStatus pattern.
-/// </summary>
 public record StoredProcedureResult
 {
     public bool IsSuccess => ProcessingStatus == 1;

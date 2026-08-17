@@ -515,23 +515,24 @@ DELIMITER ;
 
 ## 7. How to Run & Debug Locally
 
-### 1. Start the MySQL Database via Docker Compose
+### 1. Run the Full Stack (API + MySQL) via Docker Compose
 ```bash
-docker compose up -d
-```
-*(Or if managing directly: `docker start studentportal-mysql`)*
+# Build and start all services in the background
+docker compose up --build -d
 
-To stop the database:
-```bash
+# View logs from both the database and .NET API
+docker compose logs -f
+
+# Stop all containers
 docker compose down
 ```
 
-### 2. Connect to MySQL & Apply Views/SPs
+### 2. Run Database Only in Docker & Run API on Host (for VS Code Debugging)
 ```bash
-docker exec -i studentportal-mysql mysql -u root -pYourPassword123! StudentRegistrationPortal < schema-routines.sql
-```
+# 1. Start only the MySQL database
+docker compose up db -d
 
-### 3. Run & Debug in VS Code
-1. Open the project folder in **VS Code**.
-2. Press **`F5`** (or go to **Run and Debug** -> Select **.NET Core Launch (web)**).
-3. The API will launch on `http://localhost:5090` and OpenAPI documentation will be accessible in Development mode.
+# 2. Open the project in VS Code and press F5 (or run `dotnet run`)
+dotnet run
+```
+The API will be available at `http://localhost:5090` and OpenAPI endpoints will be active in Development mode.

@@ -16,7 +16,6 @@ public class StudentsController : ControllerBase
         _studentRepository = studentRepository ?? throw new ArgumentNullException(nameof(studentRepository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
-
     
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<StudentDetailsDto>), StatusCodes.Status200OK)]
@@ -26,7 +25,6 @@ public class StudentsController : ControllerBase
         return Ok(students);
     }
 
-    /// Retrieves a single student by primary key ID.
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -40,7 +38,6 @@ public class StudentsController : ControllerBase
         return Ok(student);
     }
 
-    /// Retrieves a student by their unique student number.
     [HttpGet("by-number/{studentNumber}")]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -54,9 +51,8 @@ public class StudentsController : ControllerBase
         return Ok(student);
     }
 
-    /// Invokes the sp_ManageStudent stored procedure in INSERT mode.
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateStudentDto dto, CancellationToken cancellationToken)
     {
@@ -65,18 +61,23 @@ public class StudentsController : ControllerBase
             return BadRequest(new { message = "Invalid student payload." });
         }
 
-        var result = await _studentRepository.CreateViaStoredProcedureAsync(dto, cancellationToken);
-        if (!result.IsSuccess)
+        try
         {
-            return BadRequest(new { message = result.ProcessingMessage });
-        }
+            int newStudentId = await _studentRepository.CreateAsync(dto, cancellationToken);
+            var createdStudent = await _studentRepository.GetByIdAsync(newStudentId, cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { id = result.AffectedId }, result);
+            return CreatedAtAction(nameof(GetById), new { id = newStudentId }, createdStudent);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create student.");
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
-    /// Invokes the sp_ManageStudent stored procedure in UPDATE mode.
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateStudentDto dto, CancellationToken cancellationToken)
     {
@@ -85,31 +86,45 @@ public class StudentsController : ControllerBase
             return BadRequest(new { message = "Invalid student payload." });
         }
 
-        var result = await _studentRepository.UpdateViaStoredProcedureAsync(id, dto, cancellationToken);
-        if (!result.IsSuccess)
+        try
         {
-            return BadRequest(new { message = result.ProcessingMessage });
-        }
+            bool updated = await _studentRepository.UpdateAsync(id, dto, cancellationToken);
+            if (!updated)
+            {
+                return NotFound(new { message = $"Student with ID {id} not found." });
+            }
 
-        return Ok(result);
+            return Ok(new { message = $"Student with ID {id} updated successfully." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update student ID {StudentId}.", id);
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
-    /// Invokes the sp_ManageStudent stored procedure in DELETE mode.
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var result = await _studentRepository.DeleteViaStoredProcedureAsync(id, cancellationToken);
-        if (!result.IsSuccess)
+        try
         {
-            return BadRequest(new { message = result.ProcessingMessage });
-        }
+            bool deleted = await _studentRepository.DeleteAsync(id, cancellationToken);
+            if (!deleted)
+            {
+                return NotFound(new { message = $"Student with ID {id} not found." });
+            }
 
-        return Ok(result);
+            return Ok(new { message = $"Student with ID {id} deleted successfully." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete student ID {StudentId}.", id);
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
-    /// Executes the fn_GetStudentTotalCreditHours scalar function via ADO.NET.
     [HttpGet("{id:int}/credit-hours/{semesterId:int}")]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTotalCreditHours(int id, int semesterId, CancellationToken cancellationToken)
