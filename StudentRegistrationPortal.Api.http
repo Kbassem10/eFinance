@@ -1,6 +1,71 @@
 @StudentRegistrationPortal.Api_HostAddress = http://localhost:5090
 
-GET {{StudentRegistrationPortal.Api_HostAddress}}/weatherforecast/
+### 1. Get All Students (v1 - URI Versioned)
+GET {{StudentRegistrationPortal.Api_HostAddress}}/api/v1/students
 Accept: application/json
 
 ###
+
+### 2. Get All Students (Unversioned - Default v1)
+GET {{StudentRegistrationPortal.Api_HostAddress}}/api/students
+Accept: application/json
+
+###
+
+### 3. Get Student By ID (v1)
+GET {{StudentRegistrationPortal.Api_HostAddress}}/api/v1/students/1
+Accept: application/json
+
+###
+
+### 3. Create a New Student (Uses Seeded User ID 2, Department ID 1, Status ID 1)
+POST {{StudentRegistrationPortal.Api_HostAddress}}/api/students
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": 2,
+  "departmentId": 1,
+  "studentStatusId": 1,
+  "studentNumber": "STU-2026-001",
+  "firstName": "Karim",
+  "middleName": "Bassem",
+  "lastName": "Ali",
+  "nationalId": "30001011234567",
+  "dateOfBirth": "2002-05-15",
+  "gender": "Male",
+  "phoneNumber": "+201001234567",
+  "address": "Smart Village, Giza, Egypt",
+  "admissionDate": "2026-09-01"
+}
+
+###
+
+### 4. Update Student (ID: 1)
+PUT {{StudentRegistrationPortal.Api_HostAddress}}/api/students/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "departmentId": 1,
+  "studentStatusId": 1,
+  "firstName": "Karim",
+  "middleName": "Bassem",
+  "lastName": "Ali",
+  "phoneNumber": "+201001234567",
+  "address": "New Cairo, Egypt",
+  "admissionDate": "2026-09-01"
+}
+
+###
+
+### 5. Get Student Total Credit Hours (Semester ID 1)
+GET {{StudentRegistrationPortal.Api_HostAddress}}/api/students/1/credit-hours/1
+Accept: application/json
+
+###
+
+### 6. Delete Student
+DELETE {{StudentRegistrationPortal.Api_HostAddress}}/api/students/1
+Accept: application/json
+

@@ -248,7 +248,7 @@ CREATE TABLE IF NOT EXISTS Attendance (
     AttendanceStatusId INT NOT NULL,
     Remarks VARCHAR(255) NULL,
     FOREIGN KEY (LectureId) REFERENCES Lectures(LectureId) ON DELETE CASCADE,
-    FOREIGN KEY (StudentId) REFERENCES Students(StudentId) ON DELETE RESTRICT,
+    FOREIGN KEY (StudentId) REFERENCES Students(StudentId) ON DELETE CASCADE,
     FOREIGN KEY (AttendanceStatusId) REFERENCES AttendanceStatuses(AttendanceStatusId) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 

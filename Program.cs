@@ -1,6 +1,8 @@
 using System.Reflection;
+using Asp.Versioning;
 using DbUp;
 using MySqlConnector;
+using StudentRegistrationPortal.Api.Converters;
 using StudentRegistrationPortal.Api.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,19 +11,44 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
 
 // ==========================================
-// 1. Direct MySQL ADO.NET Data Source (1-Liner)
+// 1. Direct MySQL ADO.NET Data Source
 // ==========================================
 builder.Services.AddMySqlDataSource(connectionString);
 
 // ==========================================
-// 2. Repository Layer Registration
+// 2. Unit of Work Layer
 // ==========================================
-builder.Services.AddScoped<IStudentRepository, StudentRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // ==========================================
-// 3. Controllers & OpenAPI Configuration
+// 3. API Versioning Configuration
 // ==========================================
-builder.Services.AddControllers();
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new UrlSegmentApiVersionReader(),
+        new HeaderApiVersionReader("X-Api-Version"),
+        new QueryStringApiVersionReader("api-version")
+    );
+}).AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
+
+// ==========================================
+// 4. Controllers & OpenAPI Configuration
+// ==========================================
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new LenientStringJsonConverter());
+        options.JsonSerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -53,6 +80,11 @@ catch (Exception ex)
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "Student Registration Portal API v1");
+        options.RoutePrefix = "swagger";
+    });
 }
 
 app.UseAuthorization();

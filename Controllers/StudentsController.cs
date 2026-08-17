@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using StudentRegistrationPortal.Api.DTOs;
 using StudentRegistrationPortal.Api.Repositories;
@@ -5,32 +6,34 @@ using StudentRegistrationPortal.Api.Repositories;
 namespace StudentRegistrationPortal.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Route("api/[controller]")]
 public class StudentsController : ControllerBase
 {
-    private readonly IStudentRepository _studentRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<StudentsController> _logger;
 
-    public StudentsController(IStudentRepository studentRepository, ILogger<StudentsController> logger)
+    public StudentsController(IUnitOfWork unitOfWork, ILogger<StudentsController> logger)
     {
-        _studentRepository = studentRepository ?? throw new ArgumentNullException(nameof(studentRepository));
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
     
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<StudentDetailsDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll()
     {
-        var students = await _studentRepository.GetAllAsync(cancellationToken);
+        var students = await _unitOfWork.Students.GetAllAsync();
         return Ok(students);
     }
 
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById(int id)
     {
-        var student = await _studentRepository.GetByIdAsync(id, cancellationToken);
+        var student = await _unitOfWork.Students.GetByIdAsync(id);
         if (student == null)
         {
             return NotFound(new { message = $"Student with ID {id} not found." });
@@ -41,9 +44,9 @@ public class StudentsController : ControllerBase
     [HttpGet("by-number/{studentNumber}")]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetByStudentNumber(string studentNumber, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetByStudentNumber(string studentNumber)
     {
-        var student = await _studentRepository.GetByStudentNumberAsync(studentNumber, cancellationToken);
+        var student = await _unitOfWork.Students.GetByStudentNumberAsync(studentNumber);
         if (student == null)
         {
             return NotFound(new { message = $"Student with number '{studentNumber}' not found." });
@@ -54,7 +57,7 @@ public class StudentsController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CreateStudentDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateStudentDto dto)
     {
         if (dto == null)
         {
@@ -63,13 +66,18 @@ public class StudentsController : ControllerBase
 
         try
         {
-            int newStudentId = await _studentRepository.CreateAsync(dto, cancellationToken);
-            var createdStudent = await _studentRepository.GetByIdAsync(newStudentId, cancellationToken);
+            await _unitOfWork.BeginTransactionAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = newStudentId }, createdStudent);
+            int newStudentId = await _unitOfWork.Students.CreateAsync(dto);
+            var createdStudent = await _unitOfWork.Students.GetByIdAsync(newStudentId);
+
+            await _unitOfWork.CommitAsync();
+
+            return CreatedAtAction(nameof(GetById), new { id = newStudentId, version = "1.0" }, createdStudent);
         }
         catch (Exception ex)
         {
+            await _unitOfWork.RollbackAsync();
             _logger.LogError(ex, "Failed to create student.");
             return BadRequest(new { message = ex.Message });
         }
@@ -79,7 +87,7 @@ public class StudentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateStudentDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateStudentDto dto)
     {
         if (dto == null)
         {
@@ -88,16 +96,21 @@ public class StudentsController : ControllerBase
 
         try
         {
-            bool updated = await _studentRepository.UpdateAsync(id, dto, cancellationToken);
+            await _unitOfWork.BeginTransactionAsync();
+
+            bool updated = await _unitOfWork.Students.UpdateAsync(id, dto);
             if (!updated)
             {
+                await _unitOfWork.RollbackAsync();
                 return NotFound(new { message = $"Student with ID {id} not found." });
             }
 
+            await _unitOfWork.CommitAsync();
             return Ok(new { message = $"Student with ID {id} updated successfully." });
         }
         catch (Exception ex)
         {
+            await _unitOfWork.RollbackAsync();
             _logger.LogError(ex, "Failed to update student ID {StudentId}.", id);
             return BadRequest(new { message = ex.Message });
         }
@@ -106,20 +119,25 @@ public class StudentsController : ControllerBase
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(int id)
     {
         try
         {
-            bool deleted = await _studentRepository.DeleteAsync(id, cancellationToken);
+            await _unitOfWork.BeginTransactionAsync();
+
+            bool deleted = await _unitOfWork.Students.DeleteAsync(id);
             if (!deleted)
             {
+                await _unitOfWork.RollbackAsync();
                 return NotFound(new { message = $"Student with ID {id} not found." });
             }
 
+            await _unitOfWork.CommitAsync();
             return Ok(new { message = $"Student with ID {id} deleted successfully." });
         }
         catch (Exception ex)
         {
+            await _unitOfWork.RollbackAsync();
             _logger.LogError(ex, "Failed to delete student ID {StudentId}.", id);
             return BadRequest(new { message = ex.Message });
         }
@@ -127,9 +145,9 @@ public class StudentsController : ControllerBase
 
     [HttpGet("{id:int}/credit-hours/{semesterId:int}")]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetTotalCreditHours(int id, int semesterId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetTotalCreditHours(int id, int semesterId)
     {
-        int hours = await _studentRepository.GetTotalCreditHoursAsync(id, semesterId, cancellationToken);
+        int hours = await _unitOfWork.Students.GetTotalCreditHoursAsync(id, semesterId);
         return Ok(new { studentId = id, semesterId = semesterId, totalCreditHours = hours });
     }
 }

@@ -127,6 +127,8 @@ INNER JOIN EnrollmentStatuses es ON e.EnrollmentStatusId = es.EnrollmentStatusId
 
 -- 2. FUNCTIONS
 DROP FUNCTION IF EXISTS fn_GetStudentTotalCreditHours;
+
+DELIMITER //
 CREATE FUNCTION fn_GetStudentTotalCreditHours(
     p_StudentId INT,
     p_SemesterId INT
@@ -147,10 +149,13 @@ BEGIN
       AND e.EnrollmentStatusId IN (1, 4);
 
     RETURN v_TotalCreditHours;
-END;
+END //
+DELIMITER ;
 
 -- 3. STORED PROCEDURES
 DROP PROCEDURE IF EXISTS sp_ManageStudent;
+
+DELIMITER //
 CREATE PROCEDURE sp_ManageStudent(
     IN p_ActionType VARCHAR(10),
     INOUT p_StudentId INT,
@@ -233,4 +238,5 @@ proc_label: BEGIN
     END IF;
 
     COMMIT;
-END;
+END //
+DELIMITER ;

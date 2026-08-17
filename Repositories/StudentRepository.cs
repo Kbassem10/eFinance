@@ -5,26 +5,43 @@ using StudentRegistrationPortal.Api.DTOs;
 
 namespace StudentRegistrationPortal.Api.Repositories;
 
-/// Pure ADO.NET Student Repository implementing direct standard SQL queries without Stored Procedures.
+/// Student Repository executing standard SQL queries using the shared Unit of Work connection and transaction.
 public class StudentRepository : IStudentRepository
 {
-    private readonly MySqlDataSource _dataSource;
+    private readonly Func<Task<MySqlConnection>> _connectionProvider;
+    private readonly Func<MySqlTransaction?> _transactionProvider;
     private readonly ILogger<StudentRepository> _logger;
 
-    public StudentRepository(MySqlDataSource dataSource, ILogger<StudentRepository> logger)
+    public StudentRepository(
+        Func<Task<MySqlConnection>> connectionProvider,
+        Func<MySqlTransaction?> transactionProvider,
+        ILogger<StudentRepository> logger)
     {
-        _dataSource = dataSource ?? throw new ArgumentNullException(nameof(dataSource));
+        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
+        _transactionProvider = transactionProvider ?? throw new ArgumentNullException(nameof(transactionProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<IReadOnlyList<StudentDetailsDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    /// Creates a MySqlCommand attached to the shared connection and active transaction
+    private async Task<MySqlCommand> CreateCommandAsync(string sql)
+    {
+        var connection = await _connectionProvider();
+        var command = new MySqlCommand(sql, connection);
+
+        if (_transactionProvider() is { } transaction)
+        {
+            command.Transaction = transaction;
+        }
+
+        return command;
+    }
+
+    public async Task<IReadOnlyList<StudentDetailsDto>> GetAllAsync()
     {
         var list = new List<StudentDetailsDto>();
 
         try
         {
-            await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
-
             const string sql = @"
                 SELECT 
                     StudentId, StudentNumber, FirstName, MiddleName, LastName, FullName,
@@ -35,10 +52,10 @@ public class StudentRepository : IStudentRepository
                 FROM vw_Students
                 ORDER BY StudentId DESC;";
 
-            await using var command = new MySqlCommand(sql, connection);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            await using var command = await CreateCommandAsync(sql);
+            await using var reader = await command.ExecuteReaderAsync();
 
-            while (await reader.ReadAsync(cancellationToken))
+            while (await reader.ReadAsync())
             {
                 list.Add(MapStudentFromReader(reader));
             }
@@ -47,17 +64,15 @@ public class StudentRepository : IStudentRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving students list via direct SQL query");
+            _logger.LogError(ex, "Error retrieving students list");
             throw;
         }
     }
 
-    public async Task<StudentDetailsDto?> GetByIdAsync(int studentId, CancellationToken cancellationToken = default)
+    public async Task<StudentDetailsDto?> GetByIdAsync(int studentId)
     {
         try
         {
-            await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
-
             const string sql = @"
                 SELECT 
                     StudentId, StudentNumber, FirstName, MiddleName, LastName, FullName,
@@ -69,11 +84,11 @@ public class StudentRepository : IStudentRepository
                 WHERE StudentId = @StudentId
                 LIMIT 1;";
 
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = await CreateCommandAsync(sql);
             command.Parameters.AddWithValue("@StudentId", studentId);
 
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            if (await reader.ReadAsync(cancellationToken))
+            await using var reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
             {
                 return MapStudentFromReader(reader);
             }
@@ -82,19 +97,17 @@ public class StudentRepository : IStudentRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving student ID {StudentId} via direct SQL query", studentId);
+            _logger.LogError(ex, "Error retrieving student ID {StudentId}", studentId);
             throw;
         }
     }
 
-    public async Task<StudentDetailsDto?> GetByStudentNumberAsync(string studentNumber, CancellationToken cancellationToken = default)
+    public async Task<StudentDetailsDto?> GetByStudentNumberAsync(string studentNumber)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(studentNumber);
 
         try
         {
-            await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
-
             const string sql = @"
                 SELECT 
                     StudentId, StudentNumber, FirstName, MiddleName, LastName, FullName,
@@ -106,11 +119,11 @@ public class StudentRepository : IStudentRepository
                 WHERE StudentNumber = @StudentNumber
                 LIMIT 1;";
 
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = await CreateCommandAsync(sql);
             command.Parameters.AddWithValue("@StudentNumber", studentNumber);
 
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            if (await reader.ReadAsync(cancellationToken))
+            await using var reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
             {
                 return MapStudentFromReader(reader);
             }
@@ -119,19 +132,17 @@ public class StudentRepository : IStudentRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving student number '{StudentNumber}' via direct SQL query", studentNumber);
+            _logger.LogError(ex, "Error retrieving student number '{StudentNumber}'", studentNumber);
             throw;
         }
     }
 
-    public async Task<int> CreateAsync(CreateStudentDto dto, CancellationToken cancellationToken = default)
+    public async Task<int> CreateAsync(CreateStudentDto dto)
     {
         ArgumentNullException.ThrowIfNull(dto);
 
         try
         {
-            await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
-
             const string sql = @"
                 INSERT INTO Students (
                     UserId, DepartmentId, StudentStatusId, StudentNumber,
@@ -146,7 +157,7 @@ public class StudentRepository : IStudentRepository
                 );
                 SELECT LAST_INSERT_ID();";
 
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = await CreateCommandAsync(sql);
             command.Parameters.AddWithValue("@UserId", dto.UserId);
             command.Parameters.AddWithValue("@DepartmentId", dto.DepartmentId);
             command.Parameters.AddWithValue("@StudentStatusId", dto.StudentStatusId);
@@ -161,24 +172,22 @@ public class StudentRepository : IStudentRepository
             command.Parameters.AddWithValue("@Address", (object?)dto.Address ?? DBNull.Value);
             command.Parameters.AddWithValue("@AdmissionDate", dto.AdmissionDate.ToDateTime(TimeOnly.MinValue));
 
-            var result = await command.ExecuteScalarAsync(cancellationToken);
+            var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating student via direct SQL INSERT");
+            _logger.LogError(ex, "Error creating student");
             throw;
         }
     }
 
-    public async Task<bool> UpdateAsync(int studentId, UpdateStudentDto dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(int studentId, UpdateStudentDto dto)
     {
         ArgumentNullException.ThrowIfNull(dto);
 
         try
         {
-            await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
-
             const string sql = @"
                 UPDATE Students
                 SET DepartmentId = @DepartmentId,
@@ -192,7 +201,7 @@ public class StudentRepository : IStudentRepository
                     UpdatedAt = NOW()
                 WHERE StudentId = @StudentId;";
 
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = await CreateCommandAsync(sql);
             command.Parameters.AddWithValue("@StudentId", studentId);
             command.Parameters.AddWithValue("@DepartmentId", dto.DepartmentId);
             command.Parameters.AddWithValue("@StudentStatusId", dto.StudentStatusId);
@@ -203,50 +212,46 @@ public class StudentRepository : IStudentRepository
             command.Parameters.AddWithValue("@Address", (object?)dto.Address ?? DBNull.Value);
             command.Parameters.AddWithValue("@AdmissionDate", dto.AdmissionDate.ToDateTime(TimeOnly.MinValue));
 
-            int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
+            int rowsAffected = await command.ExecuteNonQueryAsync();
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating student ID {StudentId} via direct SQL UPDATE", studentId);
+            _logger.LogError(ex, "Error updating student ID {StudentId}", studentId);
             throw;
         }
     }
 
-    public async Task<bool> DeleteAsync(int studentId, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(int studentId)
     {
         try
         {
-            await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
-
             const string sql = "DELETE FROM Students WHERE StudentId = @StudentId;";
 
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = await CreateCommandAsync(sql);
             command.Parameters.AddWithValue("@StudentId", studentId);
 
-            int rowsAffected = await command.ExecuteNonQueryAsync(cancellationToken);
+            int rowsAffected = await command.ExecuteNonQueryAsync();
             return rowsAffected > 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting student ID {StudentId} via direct SQL DELETE", studentId);
+            _logger.LogError(ex, "Error deleting student ID {StudentId}", studentId);
             throw;
         }
     }
 
-    public async Task<int> GetTotalCreditHoursAsync(int studentId, int semesterId, CancellationToken cancellationToken = default)
+    public async Task<int> GetTotalCreditHoursAsync(int studentId, int semesterId)
     {
         try
         {
-            await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
-
             const string sql = "SELECT fn_GetStudentTotalCreditHours(@StudentId, @SemesterId);";
 
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = await CreateCommandAsync(sql);
             command.Parameters.AddWithValue("@StudentId", studentId);
             command.Parameters.AddWithValue("@SemesterId", semesterId);
 
-            var result = await command.ExecuteScalarAsync(cancellationToken);
+            var result = await command.ExecuteScalarAsync();
             return result != null && result != DBNull.Value ? Convert.ToInt32(result) : 0;
         }
         catch (Exception ex)
