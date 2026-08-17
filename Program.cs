@@ -13,8 +13,6 @@ builder.Services.AddScoped<ISqlDataAccess, SqlDataAccess>();
 // 2. Repository Layer Registration
 // ==========================================
 builder.Services.AddScoped<IStudentRepository, StudentRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 
 // ==========================================
 // 3. Controllers & OpenAPI Configuration
