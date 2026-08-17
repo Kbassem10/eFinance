@@ -1,22 +1,38 @@
-/*namespace StudentRegistrationPortal.Api.Entities;
+namespace StudentRegistrationPortal.Api.Entities;
 
 public class Course
 {
-    public int Id { get; set; }
+    public int CourseId { get; set; }
 
-    public string Name { get; set; } = string.Empty;
+    public int CourseStatusId { get; set; }
 
-    public string Code { get; set; } = string.Empty;
+    public CourseStatus? CourseStatus { get; set; }
+
+    public string CourseCode { get; set; } = string.Empty;
+
+    public string CourseName { get; set; } = string.Empty;
+
+    public string? Description { get; set; }
 
     public int CreditHours { get; set; }
 
-    public int InstructorId { get; set; }
+    public int MaximumStudents { get; set; }
 
-    public Instructor? Instructor { get; set; }
+    public string? DifficultyLevel { get; set; }
 
-    public ICollection<Enrollment> Enrollments { get; set; }
-        = new List<Enrollment>();
+    public bool IsActive { get; set; }
 
-    public ICollection<CourseSession> Sessions { get; set; }
-        = new List<CourseSession>();
-}*/
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime UpdatedAt { get; set; }
+
+    public ICollection<CourseDepartment> CourseDepartments { get; set; } = new List<CourseDepartment>();
+
+    public ICollection<CourseOffering> CourseOfferings { get; set; } = new List<CourseOffering>();
+
+    // Courses that THIS course requires as prerequisites.
+    public ICollection<CoursePrerequisite> Prerequisites { get; set; } = new List<CoursePrerequisite>();
+
+    // Courses for which THIS course is listed as a prerequisite.
+    public ICollection<CoursePrerequisite> RequiredFor { get; set; } = new List<CoursePrerequisite>();
+}
