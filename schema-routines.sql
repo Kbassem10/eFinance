@@ -228,3 +228,91 @@ proc_label: BEGIN
 END $$
 
 DELIMITER ;
+
+-- ----------------------------------------------------------
+-- 4. USER REGISTRATION PROCEDURE & TIMESTAMP TRIGGERS
+-- ----------------------------------------------------------
+
+DELIMITER $$
+
+DROP TRIGGER IF EXISTS trg_Users_BeforeInsert_Timestamps $$
+CREATE TRIGGER trg_Users_BeforeInsert_Timestamps
+BEFORE INSERT ON Users
+FOR EACH ROW
+BEGIN
+    IF NEW.CreatedAt IS NULL THEN
+        SET NEW.CreatedAt = NOW();
+    END IF;
+    IF NEW.UpdatedAt IS NULL THEN
+        SET NEW.UpdatedAt = NOW();
+    END IF;
+END $$
+
+DROP TRIGGER IF EXISTS trg_Users_BeforeUpdate_Timestamps $$
+CREATE TRIGGER trg_Users_BeforeUpdate_Timestamps
+BEFORE UPDATE ON Users
+FOR EACH ROW
+BEGIN
+    SET NEW.UpdatedAt = NOW();
+END $$
+
+DROP PROCEDURE IF EXISTS sp_RegisterUser $$
+CREATE PROCEDURE sp_RegisterUser(
+    IN u_email VARCHAR(255),
+    IN u_password VARCHAR(500),
+    OUT u_userId INT,
+    OUT u_status INT,
+    OUT u_message VARCHAR(255)
+) 
+proc: BEGIN
+    DECLARE emailCount INT DEFAULT 0;
+
+    SET u_message = 'User Registration Failed';
+    SET u_status = 0;
+    SET u_userId = NULL;
+
+    -- 1. Validations
+    IF u_email IS NULL OR TRIM(u_email) = '' THEN
+        SET u_status = 0;
+        SET u_message = 'Validation Error: Email cannot be empty.';
+        LEAVE proc;
+    END IF;
+
+    IF u_password IS NULL OR TRIM(u_password) = '' THEN
+        SET u_status = 0;
+        SET u_message = 'Validation Error: Password cannot be empty.';
+        LEAVE proc;
+    END IF;
+
+    IF u_email LIKE '%@%.%' THEN
+        SELECT COUNT(*) INTO emailCount FROM Users WHERE Email = u_email;
+        IF emailCount > 0 THEN
+            SET u_status = 0;
+            SET u_message = 'Validation Error: Email already exists.';
+            LEAVE proc;
+        END IF;
+    ELSE
+        SET u_status = 0;
+        SET u_message = 'Validation Error: Invalid email format.';
+        LEAVE proc;
+    END IF;
+
+    -- 2. Transaction & Insert (Timestamps handled automatically by trigger!)
+    START TRANSACTION;
+        INSERT INTO Users (
+            Email,
+            PasswordHash,
+            IsActive
+        ) VALUES (
+            LOWER(TRIM(u_email)),
+            u_password,
+            1
+        );
+
+        SET u_userId = LAST_INSERT_ID();
+        SET u_status = 1;
+        SET u_message = 'User Registration Successful';
+    COMMIT;
+END $$
+
+DELIMITER ;
