@@ -26,9 +26,7 @@ public class StudentsController : ControllerBase
         return Ok(students);
     }
 
-    /// <summary>
     /// Retrieves a single student by primary key ID.
-    /// </summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -42,9 +40,7 @@ public class StudentsController : ControllerBase
         return Ok(student);
     }
 
-    /// <summary>
     /// Retrieves a student by their unique student number.
-    /// </summary>
     [HttpGet("by-number/{studentNumber}")]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -58,9 +54,7 @@ public class StudentsController : ControllerBase
         return Ok(student);
     }
 
-    /// <summary>
     /// Invokes the sp_ManageStudent stored procedure in INSERT mode.
-    /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -80,9 +74,7 @@ public class StudentsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.AffectedId }, result);
     }
 
-    /// <summary>
     /// Invokes the sp_ManageStudent stored procedure in UPDATE mode.
-    /// </summary>
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -102,9 +94,7 @@ public class StudentsController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
     /// Invokes the sp_ManageStudent stored procedure in DELETE mode.
-    /// </summary>
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -119,9 +109,7 @@ public class StudentsController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
     /// Executes the fn_GetStudentTotalCreditHours scalar function via ADO.NET.
-    /// </summary>
     [HttpGet("{id:int}/credit-hours/{semesterId:int}")]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTotalCreditHours(int id, int semesterId, CancellationToken cancellationToken)

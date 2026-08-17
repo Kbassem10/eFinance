@@ -1,5 +1,6 @@
 namespace StudentRegistrationPortal.Api.Entities;
 
+
 public class CourseOffering
 {
     public int CourseOfferingId { get; set; }
