@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+/*using Microsoft.EntityFrameworkCore;
 using StudentRegistrationPortal.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,3 +37,4 @@ using (var scope = app.Services.CreateScope())
 
 app.Run();
 
+*/

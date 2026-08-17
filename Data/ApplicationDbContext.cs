@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+/*using Microsoft.EntityFrameworkCore;
 using StudentRegistrationPortal.Api.Entities;
 
 namespace StudentRegistrationPortal.Api.Data;
@@ -85,3 +85,4 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
     });
 }
 }
+*/

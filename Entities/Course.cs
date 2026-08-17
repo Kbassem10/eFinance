@@ -1,4 +1,4 @@
-namespace StudentRegistrationPortal.Api.Entities;
+/*namespace StudentRegistrationPortal.Api.Entities;
 
 public class Course
 {
@@ -19,4 +19,4 @@ public class Course
 
     public ICollection<CourseSession> Sessions { get; set; }
         = new List<CourseSession>();
-}
+}*/

@@ -1,4 +1,4 @@
-namespace StudentRegistrationPortal.Api.Entities;
+/*namespace StudentRegistrationPortal.Api.Entities;
 
 public class Enrollment
 {
@@ -16,3 +16,4 @@ public class Enrollment
 
     public string Status { get; set; } = string.Empty;
 }
+*/

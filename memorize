@@ -1,0 +1,240 @@
+SQL Server Database Cheat Sheet (.NET & Student Registration Portal)
+1. Data Types
+int
+Stores whole numbers.
+Used for IDs, counts, credit hours, capacity.
+Example:
+StudentId INT
+nvarchar(n)
+Stores text (Unicode).
+Supports English, Arabic, Chinese, emojis, etc.
+n = maximum number of characters.
+Example:
+FirstName NVARCHAR(100)
+bit
+Boolean value.
+1 = True
+0 = False
+
+Used for:
+
+IsActive
+IsPassed
+RegistrationOpen
+date
+
+Stores only the date.
+
+Example:
+
+2026-08-09
+time
+
+Stores only the time.
+
+Example:
+
+09:30 AM
+datetime2
+
+Stores both date and time.
+
+Example:
+
+2026-08-09 09:30:15
+
+Recommended over datetime.
+
+decimal(p,s)
+
+Stores decimal numbers.
+
+Example:
+
+Salary DECIMAL(12,2)
+GPA DECIMAL(4,2)
+
+p = total digits
+
+s = digits after decimal point
+
+2. NULL vs NOT NULL
+Name NVARCHAR(100) NOT NULL
+
+The value is required.
+
+Cannot be:
+
+NULL
+PhoneNumber NVARCHAR(30) NULL
+
+The value is optional.
+
+Can be:
+
+NULL
+
+In ER diagrams:
+
+NN = NOT NULL
+3. Primary Key (PK)
+
+Uniquely identifies each row.
+
+Properties:
+
+Unique
+Cannot be NULL
+One PK per table
+
+Example:
+
+StudentId INT PRIMARY KEY
+4. Foreign Key (FK)
+
+Connects one table to another.
+
+Example:
+
+DepartmentId
+
+inside Students references
+
+Departments.DepartmentId
+
+Relationship:
+
+Departments
+    |
+    | 1
+    |
+    |∞
+Students
+5. Unique Key
+
+Prevents duplicate values.
+
+Example:
+
+Email UNIQUE
+
+Cannot have:
+
+omar@gmail.com
+
+omar@gmail.com
+6. Composite Key
+
+Primary key made from multiple columns.
+
+Example:
+
+PRIMARY KEY
+(
+StudentId,
+CourseOfferingId
+)
+
+Used in junction tables.
+
+7. Identity
+
+Auto-increment.
+
+Example:
+
+StudentId INT IDENTITY(1,1)
+
+Rows become
+
+1
+
+2
+
+3
+
+4
+
+Automatically.
+
+8. One-to-One Relationship
+
+One record relates to exactly one record.
+
+Example:
+
+User
+↓
+
+Student
+
+One user = one student.
+
+9. One-to-Many Relationship
+
+Most common relationship.
+
+Example:
+
+Department
+     |
+     |1
+     |
+     |∞
+Students
+
+One department has many students.
+
+Each student belongs to one department.
+
+10. Many-to-Many Relationship
+
+Cannot be implemented directly.
+
+Needs a junction table.
+
+Example:
+
+Students
+
+∞
+
+↓
+
+Enrollments
+
+↑
+
+∞
+
+CourseOfferings
+
+One student can register for many courses.
+
+One course can contain many students.
+
+11. Junction Table
+
+A table that converts a Many-to-Many relationship into two One-to-Many relationships.
+
+Examples:
+
+Enrollments
+
+CourseDepartments
+
+CoursePrerequisites
+
+UserRoles
+
+CourseOfferingInstructors
+12. ER Diagram Symbols
+PK = Primary Key
+
+FK = Foreign Key
+
+NN = NOT NULL
+
+UQ = Unique
+
+AI = Auto Increment

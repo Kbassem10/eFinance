@@ -1,4 +1,4 @@
-namespace StudentRegistrationPortal.Api.Entities;
+/*namespace StudentRegistrationPortal.Api.Entities;
 
 public class CourseSession
 {
@@ -13,4 +13,4 @@ public class CourseSession
     public DateTime EndsAt { get; set; }
 
     public string Location { get; set; } = string.Empty;
-}
+}*/
