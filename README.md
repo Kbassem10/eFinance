@@ -512,15 +512,20 @@ DELIMITER ;
 
 ## 7. How to Run & Debug Locally
 
-### 1. Start the MySQL Container
+### 1. Start the MySQL Database via Docker Compose
 ```bash
-docker start studentportal-mysql
+docker compose up -d
 ```
-*(If starting from scratch: `docker run --name studentportal-mysql -e MYSQL_ROOT_PASSWORD=YourPassword123! -e MYSQL_DATABASE=StudentRegistrationPortal -p 3306:3306 -d docker.io/library/mysql:8.4`)*
+*(Or if managing directly: `docker start studentportal-mysql`)*
+
+To stop the database:
+```bash
+docker compose down
+```
 
 ### 2. Connect to MySQL & Apply Views/SPs
 ```bash
-docker exec -i studentportal-mysql mysql -u root -pYourPassword123! StudentRegistrationPortal < sample-data.sql
+docker exec -i studentportal-mysql mysql -u root -pYourPassword123! StudentRegistrationPortal < schema-routines.sql
 ```
 
 ### 3. Run & Debug in VS Code

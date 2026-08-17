@@ -1,0 +1,55 @@
+services:
+  # ==========================================
+  # MySQL Database Service
+  # ==========================================
+  db:
+    image: docker.io/library/mysql:8.4
+    container_name: studentportal-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: YourPassword123!
+      MYSQL_DATABASE: StudentRegistrationPortal
+    ports:
+      - "3306:3306"
+    volumes:
+      # Persistent named volume for database data
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pYourPassword123!"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ==========================================
+  # ⏳ .NET 10 API Service (To be enabled later)
+  # ==========================================
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: studentportal-api
+  #   restart: on-failure
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=StudentRegistrationPortal;User=root;Password=YourPassword123!;
+  #   ports:
+  #     - "5090:8080"
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+
+  # ==========================================
+  # ⏳ WebApp Frontend Service (To be enabled later)
+  # ==========================================
+  # webapp:
+  #   build:
+  #     context: ./webapp
+  #     dockerfile: Dockerfile
+  #   container_name: studentportal-webapp
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - api
+
+volumes:
+  mysql_data:
