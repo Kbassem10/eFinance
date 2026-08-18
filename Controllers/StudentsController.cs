@@ -1,47 +1,104 @@
+using System.Security.Claims;
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StudentRegistrationPortal.Api.DTOs;
 using StudentRegistrationPortal.Api.Repositories;
+using StudentRegistrationPortal.Api.Services;
 
 namespace StudentRegistrationPortal.Api.Controllers;
 
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
+[Authorize]
 public class StudentsController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IJwtTokenService _jwtTokenService;
     private readonly ILogger<StudentsController> _logger;
 
-    public StudentsController(IUnitOfWork unitOfWork, ILogger<StudentsController> logger)
+    public StudentsController(
+        IUnitOfWork unitOfWork,
+        IJwtTokenService jwtTokenService,
+        ILogger<StudentsController> logger)
     {
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _jwtTokenService = jwtTokenService ?? throw new ArgumentNullException(nameof(jwtTokenService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
     
     [HttpGet]
+    [Authorize(Roles = "Admin,Registrar")]
     [ProducesResponseType(typeof(IReadOnlyList<StudentDetailsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAll()
     {
         var students = await _unitOfWork.Students.GetAllAsync();
         return Ok(students);
     }
 
+    [HttpGet("me")]
+    [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMyProfile(CancellationToken cancellationToken)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int currentUserId))
+        {
+            return Unauthorized(new { message = "Invalid token claims." });
+        }
+
+        var student = await _unitOfWork.Students.GetByUserIdAsync(currentUserId, cancellationToken);
+        if (student == null)
+        {
+            return NotFound(new { message = "No student profile associated with your account." });
+        }
+
+        return Ok(student);
+    }
+
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int currentUserId))
+        {
+            return Unauthorized(new { message = "Invalid token claims." });
+        }
+
+        bool isAdmin = User.IsInRole("Admin") || User.IsInRole("Registrar");
+
         var student = await _unitOfWork.Students.GetByIdAsync(id);
         if (student == null)
         {
             return NotFound(new { message = $"Student with ID {id} not found." });
         }
+
+        // Enforce Ownership: Regular students can only access their own student record
+        if (!isAdmin)
+        {
+            var myStudentProfile = await _unitOfWork.Students.GetByUserIdAsync(currentUserId, cancellationToken);
+            if (myStudentProfile == null || myStudentProfile.StudentId != id)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Forbidden: You are not authorized to view data for another user." });
+            }
+        }
+
         return Ok(student);
     }
 
     [HttpGet("by-number/{studentNumber}")]
+    [Authorize(Roles = "Admin,Registrar")]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByStudentNumber(string studentNumber)
     {
@@ -54,6 +111,7 @@ public class StudentsController : ControllerBase
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -169,20 +227,21 @@ public class StudentsController : ControllerBase
         return Ok(new { studentId = id, semesterId = semesterId, totalCreditHours = hours });
     }
 
-    [HttpGet("login")]
-    [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
+    [HttpPost("login")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Login([FromQuery] string email, [FromQuery] string password, CancellationToken cancellationToken)
+    public async Task<IActionResult> Login([FromBody] LoginRequestDto dto, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
         {
             return BadRequest(new { message = "Email and password are required." });
         }
 
-        var user = await _unitOfWork.Users.GetByEmailAsync(email, cancellationToken);
-        if (user == null || !BCrypt.Net.BCrypt.EnhancedVerify(password, user.PasswordHash))
+        var user = await _unitOfWork.Users.GetByEmailAsync(dto.Email, cancellationToken);
+        if (user == null || !BCrypt.Net.BCrypt.EnhancedVerify(dto.Password, user.PasswordHash))
         {
             return Unauthorized(new { message = "Invalid email or password." });
         }
@@ -190,9 +249,17 @@ public class StudentsController : ControllerBase
         var student = await _unitOfWork.Students.GetByUserIdAsync(user.UserId, cancellationToken);
         if (student == null)
         {
-            return NotFound(new { message = "Student record not found for the provided email." });
+            return NotFound(new { message = "Student record not found for the authenticated user." });
         }
 
-        return Ok(student);
+        var token = _jwtTokenService.GenerateToken(user, "Student", student.StudentId);
+        var expiresAt = DateTime.UtcNow.AddMinutes(120);
+
+        return Ok(new LoginResponseDto(
+            Token: token,
+            TokenType: "Bearer",
+            ExpiresAt: expiresAt,
+            Student: student
+        ));
     }
 }

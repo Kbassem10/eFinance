@@ -1,11 +1,15 @@
 using System.Reflection;
+using System.Text;
 using Asp.Versioning;
 using DbUp;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using MySqlConnector;
 using StudentRegistrationPortal.Api.Converters;
 using StudentRegistrationPortal.Api.Repositories;
+using StudentRegistrationPortal.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,9 +25,39 @@ builder.Services.AddMySqlDataSource(connectionString);
 // 2. Unit of Work Layer
 // ==========================================
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
 // ==========================================
-// 3. API Versioning Configuration
+// 3. JWT Authentication & Authorization
+// ==========================================
+var jwtSecret = builder.Configuration["Jwt:Secret"] 
+    ?? "SuperSecretKeyForStudentRegistrationPortal2026SecureAuthentication!";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "StudentRegistrationPortal";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "StudentRegistrationPortalClients";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// ==========================================
+// 4. API Versioning Configuration
 // ==========================================
 builder.Services.AddApiVersioning(options =>
 {
@@ -42,7 +76,7 @@ builder.Services.AddApiVersioning(options =>
 });
 
 // ==========================================
-// 4. FluentValidation & Controllers
+// 5. FluentValidation & Controllers
 // ==========================================
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -54,7 +88,50 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
-builder.Services.AddOpenApi();
+
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Components ??= new Microsoft.OpenApi.OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, Microsoft.OpenApi.IOpenApiSecurityScheme>();
+        var bearerScheme = new Microsoft.OpenApi.OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = Microsoft.OpenApi.ParameterLocation.Header,
+            Description = "Enter your JWT Bearer token."
+        };
+
+        document.Components.SecuritySchemes["Bearer"] = bearerScheme;
+
+        document.Security ??= new List<Microsoft.OpenApi.OpenApiSecurityRequirement>();
+        document.Security.Add(new Microsoft.OpenApi.OpenApiSecurityRequirement
+        {
+            [new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
+        });
+
+        return Task.CompletedTask;
+    });
+
+    options.AddSchemaTransformer((schema, context, cancellationToken) =>
+    {
+        if (context.JsonPropertyInfo != null)
+        {
+            if (string.Equals(context.JsonPropertyInfo.Name, "dateOfBirth", StringComparison.OrdinalIgnoreCase))
+            {
+                schema.Example = System.Text.Json.Nodes.JsonValue.Create("2004-05-15");
+            }
+            else if (string.Equals(context.JsonPropertyInfo.Name, "admissionDate", StringComparison.OrdinalIgnoreCase))
+            {
+                schema.Example = System.Text.Json.Nodes.JsonValue.Create("2026-09-01");
+            }
+        }
+        return Task.CompletedTask;
+    });
+});
 
 var app = builder.Build();
 
@@ -92,6 +169,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

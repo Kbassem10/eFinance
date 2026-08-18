@@ -97,3 +97,19 @@ public record UpdateStudentDto
 
     public DateOnly AdmissionDate { get; init; } = new DateOnly(2026, 9, 1);
 }
+
+public record LoginRequestDto
+{
+    [DefaultValue("karim.bassem@student.edu")]
+    public string Email { get; init; } = "karim.bassem@student.edu";
+
+    [DefaultValue("P@ssw0rd123!")]
+    public string Password { get; init; } = "P@ssw0rd123!";
+}
+
+public record LoginResponseDto(
+    string Token,
+    string TokenType,
+    DateTime ExpiresAt,
+    StudentDetailsDto Student
+);
