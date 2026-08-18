@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace StudentRegistrationPortal.Api.DTOs;
 
 public record StudentDetailsDto
@@ -29,30 +31,69 @@ public record StudentDetailsDto
 
 public record CreateStudentDto
 {
+    [DefaultValue("karim.bassem@student.edu")]
     public string Email { get; init; } = "karim.bassem@student.edu";
+
+    [DefaultValue("P@ssw0rd123!")]
     public string Password { get; init; } = "P@ssw0rd123!";
+
+    [DefaultValue(1)]
     public int DepartmentId { get; init; } = 1;
+
+    [DefaultValue(1)]
     public int StudentStatusId { get; init; } = 1;
+
+    [DefaultValue("STU-2026-001")]
     public string StudentNumber { get; init; } = "STU-2026-001";
+
+    [DefaultValue("Karim")]
     public string FirstName { get; init; } = "Karim";
+
+    [DefaultValue("Bassem")]
     public string? MiddleName { get; init; } = "Bassem";
+
+    [DefaultValue("Joseph")]
     public string LastName { get; init; } = "Joseph";
+
+    [DefaultValue("30001011234567")]
     public string? NationalId { get; init; } = "30001011234567";
-    public DateOnly DateOfBirth { get; init; } = new DateOnly(2002, 5, 15);
+
+    public DateOnly DateOfBirth { get; init; } = new DateOnly(2005, 12, 10);
+
+    [DefaultValue("Male")]
     public string? Gender { get; init; } = "Male";
+
+    [DefaultValue("+201204331187")]
     public string? PhoneNumber { get; init; } = "+201204331187";
+
+    [DefaultValue("Smart Village, Giza, Egypt")]
     public string? Address { get; init; } = "Smart Village, Giza, Egypt";
+
     public DateOnly AdmissionDate { get; init; } = new DateOnly(2026, 9, 1);
 }
 
 public record UpdateStudentDto
 {
+    [DefaultValue(1)]
     public int DepartmentId { get; init; } = 1;
+
+    [DefaultValue(1)]
     public int StudentStatusId { get; init; } = 1;
+
+    [DefaultValue("Karim")]
     public string FirstName { get; init; } = "Karim";
+
+    [DefaultValue("Bassem")]
     public string? MiddleName { get; init; } = "Bassem";
+
+    [DefaultValue("Joseph")]
     public string LastName { get; init; } = "Joseph";
+
+    [DefaultValue("+201204331187")]
     public string? PhoneNumber { get; init; } = "+201204331187";
+
+    [DefaultValue("Smart Village, Giza, Egypt")]
     public string? Address { get; init; } = "Smart Village, Giza, Egypt";
+
     public DateOnly AdmissionDate { get; init; } = new DateOnly(2026, 9, 1);
 }

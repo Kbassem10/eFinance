@@ -137,6 +137,75 @@ public class StudentRepository : IStudentRepository
         }
     }
 
+    public async Task<StudentDetailsDto?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+
+        try
+        {
+            const string sql = @"
+                SELECT 
+                    StudentId, StudentNumber, FirstName, MiddleName, LastName, FullName,
+                    Email, NationalId, DateOfBirth, Gender, PhoneNumber, Address,
+                    AdmissionDate, AcademicLevel, GPA, CompletedCreditHours,
+                    DepartmentId, DepartmentName, DepartmentCode,
+                    StudentStatusId, StatusName, CreatedAt, UpdatedAt
+                FROM vw_Students
+                WHERE LOWER(Email) = LOWER(@Email)
+                LIMIT 1;";
+
+            await using var command = await CreateCommandAsync(sql);
+            command.Parameters.AddWithValue("@Email", email.Trim());
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                return MapStudentFromReader(reader);
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving student with email '{Email}'", email);
+            throw;
+        }
+    }
+
+    public async Task<StudentDetailsDto?> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            const string sql = @"
+                SELECT 
+                    s.StudentId, s.StudentNumber, s.FirstName, s.MiddleName, s.LastName, s.FullName,
+                    s.Email, s.NationalId, s.DateOfBirth, s.Gender, s.PhoneNumber, s.Address,
+                    s.AdmissionDate, s.AcademicLevel, s.GPA, s.CompletedCreditHours,
+                    s.DepartmentId, s.DepartmentName, s.DepartmentCode,
+                    s.StudentStatusId, s.StatusName, s.CreatedAt, s.UpdatedAt
+                FROM vw_Students s
+                INNER JOIN Students st ON s.StudentId = st.StudentId
+                WHERE st.UserId = @UserId
+                LIMIT 1;";
+
+            await using var command = await CreateCommandAsync(sql);
+            command.Parameters.AddWithValue("@UserId", userId);
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                return MapStudentFromReader(reader);
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving student by user ID {UserId}", userId);
+            throw;
+        }
+    }
+
     public async Task<int> CreateAsync(int userId, CreateStudentDto dto, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(dto);

@@ -8,7 +8,6 @@ namespace StudentRegistrationPortal.Api.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
-[Route("api/[controller]")]
 public class StudentsController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork;
@@ -168,5 +167,32 @@ public class StudentsController : ControllerBase
     {
         int hours = await _unitOfWork.Students.GetTotalCreditHoursAsync(id, semesterId);
         return Ok(new { studentId = id, semesterId = semesterId, totalCreditHours = hours });
+    }
+
+    [HttpGet("login")]
+    [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Login([FromQuery] string email, [FromQuery] string password, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            return BadRequest(new { message = "Email and password are required." });
+        }
+
+        var user = await _unitOfWork.Users.GetByEmailAsync(email, cancellationToken);
+        if (user == null || !BCrypt.Net.BCrypt.EnhancedVerify(password, user.PasswordHash))
+        {
+            return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        var student = await _unitOfWork.Students.GetByUserIdAsync(user.UserId, cancellationToken);
+        if (student == null)
+        {
+            return NotFound(new { message = "Student record not found for the provided email." });
+        }
+
+        return Ok(student);
     }
 }
