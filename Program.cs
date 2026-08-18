@@ -1,6 +1,8 @@
 using System.Reflection;
 using Asp.Versioning;
 using DbUp;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using MySqlConnector;
 using StudentRegistrationPortal.Api.Converters;
 using StudentRegistrationPortal.Api.Repositories;
@@ -40,8 +42,11 @@ builder.Services.AddApiVersioning(options =>
 });
 
 // ==========================================
-// 4. Controllers & OpenAPI Configuration
+// 4. FluentValidation & Controllers
 // ==========================================
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {

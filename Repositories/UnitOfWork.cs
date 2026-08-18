@@ -11,6 +11,7 @@ public class UnitOfWork : IUnitOfWork
     private MySqlConnection? _connection;
     private MySqlTransaction? _transaction;
     private IStudentRepository? _students;
+    private IUserRepository? _users;
     private bool _disposed;
 
     public UnitOfWork(MySqlDataSource dataSource, ILoggerFactory loggerFactory)
@@ -28,6 +29,16 @@ public class UnitOfWork : IUnitOfWork
             },
             transactionProvider: () => _transaction,
             _loggerFactory.CreateLogger<StudentRepository>());
+
+    public IUserRepository Users =>
+        _users ??= new UserRepository(
+            connectionProvider: async () =>
+            {
+                _connection ??= await _dataSource.OpenConnectionAsync();
+                return _connection;
+            },
+            transactionProvider: () => _transaction,
+            _loggerFactory.CreateLogger<UserRepository>());
 
     public async Task BeginTransactionAsync()
     {

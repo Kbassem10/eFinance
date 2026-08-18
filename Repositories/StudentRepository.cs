@@ -137,7 +137,7 @@ public class StudentRepository : IStudentRepository
         }
     }
 
-    public async Task<int> CreateAsync(CreateStudentDto dto)
+    public async Task<int> CreateAsync(int userId, CreateStudentDto dto, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(dto);
 
@@ -158,7 +158,7 @@ public class StudentRepository : IStudentRepository
                 SELECT LAST_INSERT_ID();";
 
             await using var command = await CreateCommandAsync(sql);
-            command.Parameters.AddWithValue("@UserId", dto.UserId);
+            command.Parameters.AddWithValue("@UserId", userId);
             command.Parameters.AddWithValue("@DepartmentId", dto.DepartmentId);
             command.Parameters.AddWithValue("@StudentStatusId", dto.StudentStatusId);
             command.Parameters.AddWithValue("@StudentNumber", dto.StudentNumber);
@@ -172,7 +172,7 @@ public class StudentRepository : IStudentRepository
             command.Parameters.AddWithValue("@Address", (object?)dto.Address ?? DBNull.Value);
             command.Parameters.AddWithValue("@AdmissionDate", dto.AdmissionDate.ToDateTime(TimeOnly.MinValue));
 
-            var result = await command.ExecuteScalarAsync();
+            var result = await command.ExecuteScalarAsync(cancellationToken);
             return Convert.ToInt32(result);
         }
         catch (Exception ex)

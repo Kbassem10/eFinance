@@ -30,11 +30,11 @@ Accept: application/json
   "studentNumber": "STU-2026-001",
   "firstName": "Karim",
   "middleName": "Bassem",
-  "lastName": "Ali",
+  "lastName": "Joseph",
   "nationalId": "30001011234567",
   "dateOfBirth": "2002-05-15",
   "gender": "Male",
-  "phoneNumber": "+201001234567",
+  "phoneNumber": "+201204331187",
   "address": "Smart Village, Giza, Egypt",
   "admissionDate": "2026-09-01"
 }
@@ -51,8 +51,8 @@ Accept: application/json
   "studentStatusId": 1,
   "firstName": "Karim",
   "middleName": "Bassem",
-  "lastName": "Ali",
-  "phoneNumber": "+201001234567",
+  "lastName": "Joseph",
+  "phoneNumber": "+201204331187",
   "address": "New Cairo, Egypt",
   "admissionDate": "2026-09-01"
 }

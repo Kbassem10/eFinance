@@ -57,18 +57,37 @@ public class StudentsController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CreateStudentDto dto)
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Create([FromBody] CreateStudentDto dto, CancellationToken cancellationToken)
     {
         if (dto == null)
         {
             return BadRequest(new { message = "Invalid student payload." });
         }
 
+        var existingUser = await _unitOfWork.Users.GetByEmailAsync(dto.Email, cancellationToken);
+        if (existingUser != null)
+        {
+            return Conflict(new { message = $"A user with email '{dto.Email}' already exists." });
+        }
+
+        var existingStudent = await _unitOfWork.Students.GetByStudentNumberAsync(dto.StudentNumber);
+        if (existingStudent != null)
+        {
+            return Conflict(new { message = $"A student with student number '{dto.StudentNumber}' already exists." });
+        }
+
         try
         {
             await _unitOfWork.BeginTransactionAsync();
 
-            int newStudentId = await _unitOfWork.Students.CreateAsync(dto);
+            var passwordHash = BCrypt.Net.BCrypt.EnhancedHashPassword(dto.Password, 11);
+            int newUserId = await _unitOfWork.Users.CreateAsync(dto.Email, passwordHash, cancellationToken);
+
+            const int studentRoleId = 2; // Student Role
+            await _unitOfWork.Users.AssignRoleAsync(newUserId, studentRoleId, cancellationToken);
+
+            int newStudentId = await _unitOfWork.Students.CreateAsync(newUserId, dto, cancellationToken);
             var createdStudent = await _unitOfWork.Students.GetByIdAsync(newStudentId);
 
             await _unitOfWork.CommitAsync();
