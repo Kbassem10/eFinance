@@ -100,8 +100,8 @@ public record UpdateStudentDto
 
 public record LoginRequestDto
 {
-    [DefaultValue("karim.bassem@student.edu")]
-    public string Email { get; init; } = "karim.bassem@student.edu";
+    [DefaultValue("karim1.bassem@student.edu")]
+    public string Email { get; init; } = "karim1.bassem@student.edu";
 
     [DefaultValue("P@ssw0rd123!")]
     public string Password { get; init; } = "P@ssw0rd123!";

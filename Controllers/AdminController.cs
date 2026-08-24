@@ -138,16 +138,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("users/{userId:int}/roles/{roleId:int}")]
-    [Authorize(Roles = "Admin")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> AssignRole([FromRoute] int userId, [FromRoute] int roleId, CancellationToken cancellationToken)
-    {
-        await _unitOfWork.Users.AssignRoleAsync(userId, roleId, cancellationToken);
-        return Ok(new { message = $"Role ID {roleId} assigned to User ID {userId} successfully." });
-    }
-
     [HttpGet("enrollments")]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(IReadOnlyList<AdminEnrollmentDetailsDto>), StatusCodes.Status200OK)]
