@@ -62,7 +62,7 @@ public class StudentsController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<EnrollmentResultDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetMyEnrollments(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetMyEnrollments([FromQuery] EnrollmentFilterDto filter, CancellationToken cancellationToken)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int currentUserId))
@@ -76,7 +76,7 @@ public class StudentsController : ControllerBase
             return NotFound(new { message = "No student profile associated with your account." });
         }
 
-        var list = await _unitOfWork.Students.GetStudentEnrollmentsAsync(student.StudentId, cancellationToken);
+        var list = await _unitOfWork.Students.GetStudentEnrollmentsAsync(student.StudentId, filter, cancellationToken);
         return Ok(list);
     }
 

@@ -5,43 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Portal - Login & Registration</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
     <style>
         body { background-color: #f4f6f9; min-height: 100vh; display: flex; flex-direction: column; }
         .auth-card { max-width: 440px; width: 100%; margin: 60px auto; border-radius: 12px; }
         .dashboard-card { max-width: 960px; width: 100%; margin: 40px auto; border-radius: 12px; }
+        .ts-control { border-radius: 0.375rem; padding: 0.5rem 0.75rem; min-height: 48px; font-size: 1rem; }
+        .ts-dropdown .active { background-color: #0d6efd; color: #fff; }
+        .ts-dropdown .active .text-muted { color: rgba(255, 255, 255, 0.75) !important; }
+        .ts-control .item { background-color: #e7f1ff; color: #0d6efd; border: 1px solid #b6d4fe; border-radius: 0.25rem; font-weight: 500; }
     </style>
 </head>
 <body>
 
-<div class="container my-auto">
-    <div id="alertBox" class="alert d-none mx-auto mb-3" style="max-width: 600px;" role="alert"></div>
-
-    <!-- Login Card -->
-    <div id="authSection" class="card shadow-sm auth-card p-4">
-        <h4 class="text-center mb-1 fw-bold text-dark">Student Portal</h4>
-        <p class="text-center text-muted small mb-4">Sign in with your student credentials</p>
-
-        <form id="loginForm">
-            <div class="mb-3">
-                <label for="loginEmail" class="form-label">Email Address</label>
-                <input type="email" class="form-control" id="loginEmail" placeholder="student@example.edu" required>
-            </div>
-            <div class="mb-3">
-                <label for="loginPassword" class="form-label">Password</label>
-                <input type="password" class="form-control" id="loginPassword" placeholder="••••••••" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
-        </form>
-    </div>
+<div class="container my-4">
+    <div id="alertBox" class="alert d-none mx-auto mb-3" style="max-width: 960px;" role="alert"></div>
 
     <!-- Authenticated Dashboard Card -->
-    <div id="dashboardSection" class="card shadow-sm dashboard-card p-4 d-none">
-        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+    <div id="dashboardSection" class="card shadow-sm dashboard-card p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-3 gap-2">
             <div>
                 <span class="badge bg-primary text-uppercase me-1">Student</span>
                 <h4 class="mb-0 d-inline align-middle fw-bold">Welcome, <span id="userName" class="text-primary"></span></h4>
             </div>
-            <button id="logoutBtn" class="btn btn-outline-danger btn-sm">Log Out</button>
+            <div class="d-flex align-items-center gap-2">
+                <a href="index.html" class="btn btn-primary btn-sm active">Course Registration</a>
+                <a href="enrollments.html" class="btn btn-outline-primary btn-sm">My Enrollments</a>
+                <button id="logoutBtn" class="btn btn-outline-danger btn-sm">Log Out</button>
+            </div>
         </div>
 
         <!-- Student Profile Summary -->
@@ -62,74 +53,46 @@
                 <h5 class="mb-0 fw-bold">Course Registration</h5>
             </div>
             <div class="card-body p-4">
-                <label for="courseSelect" class="form-label fw-semibold">Select Course to Add:</label>
-                <div class="input-group mb-4">
-                    <select class="form-select form-select-lg" id="courseSelect">
-                        <option value="" selected disabled>-- Choose a course from catalog --</option>
+                <label for="courseSelect" class="form-label fw-semibold">Select Course(s) to Add:</label>
+                <div class="mb-4">
+                    <select class="form-select form-select-lg" id="courseSelect" multiple placeholder="Search courses by code, title, or instructor...">
                     </select>
-                    <button class="btn btn-primary px-4 fw-semibold" id="addSelectedCourseBtn" type="button">+ Add to List</button>
+                    <div class="form-text text-muted">Search by course code, name, or instructor to select multiple courses.</div>
                 </div>
 
-                <!-- Dynamic Selected Courses Table -->
-                <h6 class="fw-bold text-secondary mb-2">Pending Registration List</h6>
-                <div class="table-responsive mb-3">
-                    <table class="table table-bordered table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Code</th>
-                                <th>Course Title</th>
-                                <th>Credit Hours</th>
-                                <th>Instructor</th>
-                                <th>Difficulty Level</th>
-                                <th class="text-center" style="width: 100px;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="selectedCoursesTableBody">
-                            <tr id="noCoursesRow">
-                                <td colspan="6" class="text-center text-muted py-3">No courses selected yet. Choose a course from the dropdown above.</td>
-                            </tr>
-                        </tbody>
-                        <tfoot id="tableSummaryFoot" class="table-light d-none">
-                            <tr>
-                                <th colspan="2" class="text-end">Total Selected Hours:</th>
-                                <th id="totalCreditHours">0</th>
-                                <th colspan="3"></th>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
+                <!-- Dynamic Selected Courses Table Section (hidden by default when empty) -->
+                <div id="pendingCoursesSection" class="d-none">
+                    <h6 class="fw-bold text-secondary mb-2">Pending Registration List</h6>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Course Title</th>
+                                    <th>Credit Hours</th>
+                                    <th>Instructor</th>
+                                    <th>Difficulty Level</th>
+                                    <th class="text-center" style="width: 100px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="selectedCoursesTableBody">
+                            </tbody>
+                            <tfoot id="tableSummaryFoot" class="table-light">
+                                <tr>
+                                    <th colspan="2" class="text-end">Total Selected Hours:</th>
+                                    <th id="totalCreditHours">0</th>
+                                    <th colspan="3"></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
 
-                <!-- Submit Button at Bottom -->
-                <div class="d-flex justify-content-end">
-                    <button id="submitEnrollmentBtn" class="btn btn-success btn-lg px-4 fw-bold" disabled>
-                        Submit Course Registration
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Enrolled / Submitted Courses List -->
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
-                <span>My Registered / Pending Enrollments</span>
-                <button id="refreshEnrollmentsBtn" class="btn btn-sm btn-outline-secondary">Refresh</button>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover mb-0 align-middle">
-                        <thead>
-                            <tr>
-                                <th>Enrollment ID</th>
-                                <th>Course Code</th>
-                                <th>Course Name</th>
-                                <th>Status</th>
-                                <th>Date Submitted</th>
-                            </tr>
-                        </thead>
-                        <tbody id="enrolledCoursesTableBody">
-                            <tr><td colspan="5" class="text-center text-muted py-3">Loading enrollments...</td></tr>
-                        </tbody>
-                    </table>
+                    <!-- Submit Button at Bottom -->
+                    <div class="d-flex justify-content-end">
+                        <button type="button" id="submitEnrollmentBtn" class="btn btn-success btn-lg px-4 fw-bold">
+                            Submit Course Registration
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -137,6 +100,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
     const API_BASE = '/api/students';
     const API_VERSION = '1.0';
@@ -144,6 +108,96 @@
     // In-memory state for available catalog and selected courses
     let availableCoursesMap = new Map();
     let selectedCourses = [];
+    let courseTomSelect = null;
+
+    function initCourseSelect() {
+        const select = document.getElementById('courseSelect');
+        if (!select) return;
+
+        if (window.TomSelect) {
+            if (courseTomSelect) {
+                courseTomSelect.destroy();
+            }
+            courseTomSelect = new TomSelect('#courseSelect', {
+                plugins: ['remove_button', 'clear_button'],
+                persist: false,
+                create: false,
+                maxItems: null,
+                closeAfterSelect: false,
+                hideSelected: true,
+                placeholder: 'Type to search and select courses from catalog...',
+                searchField: ['courseCode', 'courseName', 'instructorName', 'displayText'],
+                valueField: 'courseId',
+                labelField: 'displayText',
+                onItemAdd: function() {
+                    this.setTextboxValue('');
+                    this.refreshOptions(false);
+                },
+                render: {
+                    item: function(data, escape) {
+                        const code = escape(data.courseCode || '');
+                        const name = escape(data.courseName || data.displayText || '');
+                        const credits = data.creditHours ? `${escape(String(data.creditHours))} hrs` : '';
+                        return `<div>
+                            <span class="badge bg-primary me-1">${code}</span>
+                            <span>${name}</span>
+                            ${credits ? `<span class="badge bg-light text-dark ms-1 border">${credits}</span>` : ''}
+                        </div>`;
+                    },
+                    option: function(data, escape) {
+                        const code = escape(data.courseCode || '');
+                        const name = escape(data.courseName || data.displayText || '');
+                        const instructor = escape(data.instructorName || 'Faculty Member');
+                        const level = escape(data.difficultyLevel || 'Standard');
+                        const credits = escape(String(data.creditHours || 0));
+                        return `<div class="py-1">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold"><span class="badge bg-primary me-1">${code}</span> ${name}</span>
+                                <span class="badge bg-secondary">${level}</span>
+                            </div>
+                            <div class="small text-muted d-flex gap-3">
+                                <span><strong>Credits:</strong> ${credits} hrs</span>
+                                <span><strong>Instructor:</strong> ${instructor}</span>
+                            </div>
+                        </div>`;
+                    }
+                },
+                onChange: function(values) {
+                    let ids = [];
+                    if (Array.isArray(values)) {
+                        ids = values;
+                    } else if (typeof values === 'string' && values.trim().length > 0) {
+                        ids = values.split(',');
+                    } else if (values != null && values !== '') {
+                        ids = [values];
+                    }
+                    const numIds = ids.map(v => parseInt(v, 10)).filter(id => !isNaN(id) && id > 0);
+                    selectedCourses = numIds
+                        .map(id => availableCoursesMap.get(id))
+                        .filter(c => Boolean(c));
+                    renderSelectedCoursesTable();
+                    hideAlert();
+                }
+            });
+
+            courseTomSelect.on('item_add', function() {
+                this.setTextboxValue('');
+                if (this.control_input) {
+                    this.control_input.value = '';
+                }
+                this.refreshOptions(false);
+            });
+        } else {
+            select.addEventListener('change', () => {
+                const selectedOptions = Array.from(select.selectedOptions);
+                selectedCourses = selectedOptions
+                    .map(opt => availableCoursesMap.get(parseInt(opt.value, 10)))
+                    .filter(c => Boolean(c));
+                renderSelectedCoursesTable();
+                hideAlert();
+            });
+        }
+    }
 
     async function apiRequest(url, options = {}) {
         options.headers = options.headers || {};
@@ -168,7 +222,7 @@
     function showAlert(message, type = 'danger') {
         const alertBox = document.getElementById('alertBox');
         alertBox.className = `alert alert-${type} mx-auto mb-3`;
-        alertBox.textContent = message;
+        alertBox.innerHTML = message;
         alertBox.classList.remove('d-none');
     }
 
@@ -178,31 +232,12 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('jwt_token');
-        if (token) {
-            initStudentPortal();
+        if (!token) {
+            window.location.replace('login.html');
+            return;
         }
-    });
-
-    // 1. Login Handler
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        hideAlert();
-
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-
-        try {
-            const result = await apiRequest(`${API_BASE}/login`, {
-                method: 'POST',
-                body: JSON.stringify({ email, password })
-            });
-
-            localStorage.setItem('jwt_token', result.token);
-            showAlert('Login successful!', 'success');
-            initStudentPortal(result.student);
-        } catch (err) {
-            showAlert(err.message, 'danger');
-        }
+        initCourseSelect();
+        initStudentPortal();
     });
 
     async function initStudentPortal(preloadedStudent = null) {
@@ -210,100 +245,103 @@
             const student = preloadedStudent || await apiRequest(`${API_BASE}/me`, { method: 'GET' });
             displayDashboard(student);
             await loadCoursesCatalog();
-            await loadMyEnrollments();
         } catch (err) {
             logout();
         }
     }
 
     function displayDashboard(student) {
-        document.getElementById('authSection').classList.add('d-none');
-        document.getElementById('dashboardSection').classList.remove('d-none');
-
-        document.getElementById('userName').textContent = `${student.firstName} ${student.lastName}`;
-        document.getElementById('profileStudentId').textContent = student.studentId;
-        document.getElementById('profileStudentNumber').textContent = student.studentNumber;
-        document.getElementById('profileDept').textContent = student.departmentName || `Dept #${student.departmentId}`;
+        if (!student) return;
+        document.getElementById('userName').textContent = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
+        document.getElementById('profileStudentId').textContent = student.studentId || '-';
+        document.getElementById('profileStudentNumber').textContent = student.studentNumber || '-';
+        document.getElementById('profileDept').textContent = student.departmentName || (student.departmentId ? `Dept #${student.departmentId}` : '-');
         document.getElementById('profileStatus').textContent = student.statusName || 'Active';
     }
 
     // 2. Load Courses into Dropdown
     async function loadCoursesCatalog() {
-        const select = document.getElementById('courseSelect');
         try {
             const courses = await apiRequest('/api/courses', { method: 'GET' });
-            select.innerHTML = '<option value="" selected disabled>-- Choose a course from catalog --</option>';
             availableCoursesMap.clear();
 
-            if (courses && courses.length > 0) {
+            if (!courseTomSelect) {
+                initCourseSelect();
+            }
+
+            if (courseTomSelect) {
+                courseTomSelect.clear();
+                courseTomSelect.clearOptions();
+            } else {
+                const select = document.getElementById('courseSelect');
+                if (select) select.innerHTML = '';
+            }
+
+            if (Array.isArray(courses) && courses.length > 0) {
+                const select = document.getElementById('courseSelect');
                 courses.forEach(c => {
+                    if (!c || c.courseId == null) return;
                     availableCoursesMap.set(c.courseId, c);
-                    const opt = document.createElement('option');
-                    opt.value = c.courseId;
-                    const instructor = c.instructorName ? ` (Instructor: ${c.instructorName})` : '';
-                    opt.textContent = `${c.courseCode} - ${c.courseName} [${c.creditHours} Credits]${instructor}`;
-                    select.appendChild(opt);
+
+                    const item = {
+                        courseId: String(c.courseId),
+                        courseCode: c.courseCode || '',
+                        courseName: c.courseName || '',
+                        creditHours: c.creditHours || 0,
+                        instructorName: c.instructorName || 'Faculty Member',
+                        difficultyLevel: c.difficultyLevel || 'Standard',
+                        displayText: `${c.courseCode} - ${c.courseName}`
+                    };
+
+                    if (courseTomSelect) {
+                        courseTomSelect.addOption(item);
+                    } else if (select) {
+                        const opt = document.createElement('option');
+                        opt.value = c.courseId;
+                        const instructor = c.instructorName ? ` (Instructor: ${c.instructorName})` : '';
+                        opt.textContent = `${c.courseCode} - ${c.courseName} [${c.creditHours} Credits]${instructor}`;
+                        select.appendChild(opt);
+                    }
                 });
+
+                if (courseTomSelect) {
+                    courseTomSelect.refreshOptions(false);
+                }
             }
         } catch (err) {
-            showAlert(`Failed to load courses: ${err.message}`, 'danger');
+            showAlert(`Failed to load courses: ${err.message || 'Unknown error'}`, 'danger');
         }
     }
 
-    // 3. Dropdown Selection / Add Course to Dynamic Table
-    function addSelectedCourse() {
-        const select = document.getElementById('courseSelect');
-        const courseId = parseInt(select.value, 10);
-        if (!courseId || isNaN(courseId)) return;
-
-        const course = availableCoursesMap.get(courseId);
-        if (!course) return;
-
-        // Check if already in the selected list
-        if (selectedCourses.some(c => c.courseId === courseId)) {
-            showAlert(`Course '${course.courseCode}' is already in your registration list.`, 'warning');
-            select.value = '';
-            return;
-        }
-
-        selectedCourses.push(course);
-        select.value = '';
-        renderSelectedCoursesTable();
-        hideAlert();
-    }
-
-    document.getElementById('courseSelect').addEventListener('change', addSelectedCourse);
-    document.getElementById('addSelectedCourseBtn').addEventListener('click', addSelectedCourse);
-
-    // 4. Render Dynamic Table & Delete Button
+    // 3. Render Dynamic Table & Delete Button
     function renderSelectedCoursesTable() {
+        const section = document.getElementById('pendingCoursesSection');
         const tbody = document.getElementById('selectedCoursesTableBody');
-        const foot = document.getElementById('tableSummaryFoot');
         const submitBtn = document.getElementById('submitEnrollmentBtn');
 
+        if (!tbody) return;
         tbody.innerHTML = '';
 
-        if (selectedCourses.length === 0) {
-            tbody.innerHTML = `
-                <tr id="noCoursesRow">
-                    <td colspan="6" class="text-center text-muted py-3">No courses selected yet. Choose a course from the dropdown above.</td>
-                </tr>`;
-            foot.classList.add('d-none');
-            submitBtn.disabled = true;
+        if (!selectedCourses || selectedCourses.length === 0) {
+            if (section) section.classList.add('d-none');
+            if (submitBtn) submitBtn.disabled = true;
             return;
         }
+
+        if (section) section.classList.remove('d-none');
+        if (submitBtn) submitBtn.disabled = false;
 
         let totalCredits = 0;
 
         selectedCourses.forEach(c => {
-            totalCredits += c.creditHours;
+            totalCredits += (c.creditHours || 0);
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><span class="badge bg-primary">${c.courseCode}</span></td>
-                <td class="fw-semibold">${c.courseName}</td>
-                <td>${c.creditHours} hrs</td>
+                <td><span class="badge bg-primary">${c.courseCode || ''}</span></td>
+                <td class="fw-semibold">${c.courseName || ''}</td>
+                <td>${c.creditHours || 0} hrs</td>
                 <td><span class="text-dark">${c.instructorName || 'Faculty Member'}</span></td>
-                <td><span class="badge bg-secondary">${c.difficultyLevel}</span></td>
+                <td><span class="badge bg-secondary">${c.difficultyLevel || 'Standard'}</span></td>
                 <td class="text-center">
                     <button class="btn btn-outline-danger btn-sm" onclick="removeSelectedCourse(${c.courseId})">Delete</button>
                 </td>
@@ -311,24 +349,55 @@
             tbody.appendChild(tr);
         });
 
-        document.getElementById('totalCreditHours').textContent = `${totalCredits} hrs`;
-        foot.classList.remove('d-none');
-        submitBtn.disabled = false;
+        const totalHoursElem = document.getElementById('totalCreditHours');
+        if (totalHoursElem) {
+            totalHoursElem.textContent = `${totalCredits} hrs`;
+        }
     }
 
     window.removeSelectedCourse = function(courseId) {
-        selectedCourses = selectedCourses.filter(c => c.courseId !== courseId);
-        renderSelectedCoursesTable();
+        if (courseTomSelect) {
+            courseTomSelect.removeItem(String(courseId));
+        } else {
+            selectedCourses = selectedCourses.filter(c => c && c.courseId !== courseId);
+            const select = document.getElementById('courseSelect');
+            if (select) {
+                Array.from(select.options).forEach(opt => {
+                    if (parseInt(opt.value, 10) === courseId) {
+                        opt.selected = false;
+                    }
+                });
+            }
+            renderSelectedCoursesTable();
+        }
     };
 
-    // 5. Submit Course Registration Batch
-    document.getElementById('submitEnrollmentBtn').addEventListener('click', async () => {
-        if (selectedCourses.length === 0) return;
+    // 4. Submit Course Registration Batch
+    document.getElementById('submitEnrollmentBtn').addEventListener('click', async (e) => {
+        if (e) e.preventDefault();
 
-        const courseIds = selectedCourses.map(c => c.courseId);
+        // Extract course IDs from TomSelect or selectedCourses state
+        let courseIds = [];
+        if (courseTomSelect) {
+            const val = courseTomSelect.getValue();
+            const rawIds = Array.isArray(val) ? val : (typeof val === 'string' && val.trim().length > 0 ? val.split(',') : (val ? [val] : []));
+            courseIds = rawIds.map(v => parseInt(v, 10)).filter(id => !isNaN(id) && id > 0);
+        }
+
+        if (courseIds.length === 0 && Array.isArray(selectedCourses) && selectedCourses.length > 0) {
+            courseIds = selectedCourses.map(c => parseInt(c.courseId, 10)).filter(id => !isNaN(id) && id > 0);
+        }
+
+        if (courseIds.length === 0) {
+            showAlert('Please select at least one course to register.', 'warning');
+            return;
+        }
+
         const submitBtn = document.getElementById('submitEnrollmentBtn');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Submitting...';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+        }
 
         try {
             const results = await apiRequest(`${API_BASE}/me/enrollments`, {
@@ -336,60 +405,30 @@
                 body: JSON.stringify({ courseIds })
             });
 
-            showAlert(`Successfully submitted registration for ${results.length} course(s)! Status set to Pending.`, 'success');
+            const count = Array.isArray(results) ? results.length : courseIds.length;
+            showAlert(`Successfully submitted registration for ${count} course(s)! <a href="enrollments.html" class="alert-link text-decoration-underline fw-semibold ms-1">View in My Enrollments &rarr;</a>`, 'success');
+            
             selectedCourses = [];
+            if (courseTomSelect) {
+                courseTomSelect.clear();
+            }
             renderSelectedCoursesTable();
-            await loadMyEnrollments();
         } catch (err) {
-            showAlert(`Enrollment failed: ${err.message}`, 'danger');
+            showAlert(`Enrollment failed: ${err.message || 'Unknown error'}`, 'danger');
         } finally {
-            submitBtn.disabled = selectedCourses.length === 0;
-            submitBtn.textContent = 'Submit Course Registration';
+            if (submitBtn) {
+                submitBtn.disabled = selectedCourses.length === 0;
+                submitBtn.textContent = 'Submit Course Registration';
+            }
         }
     });
 
-    // 6. Load Confirmed & Pending Enrollments
-    async function loadMyEnrollments() {
-        const tbody = document.getElementById('enrolledCoursesTableBody');
-        try {
-            const list = await apiRequest(`${API_BASE}/me/enrollments`, { method: 'GET' });
-            tbody.innerHTML = '';
-
-            if (!list || list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">No enrollments registered yet.</td></tr>`;
-                return;
-            }
-
-            list.forEach(e => {
-                const tr = document.createElement('tr');
-                const isPending = e.status.toLowerCase() === 'pending';
-                const statusBadge = isPending ? 'warning text-dark' : 'success';
-                const dateStr = new Date(e.registrationDate).toLocaleDateString();
-
-                tr.innerHTML = `
-                    <td>#${e.enrollmentId}</td>
-                    <td><span class="badge bg-primary">${e.courseCode}</span></td>
-                    <td><strong>${e.courseName}</strong></td>
-                    <td><span class="badge bg-${statusBadge}">${e.status}</span></td>
-                    <td>${dateStr}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-2">${err.message}</td></tr>`;
-        }
-    }
-
     function logout() {
         localStorage.removeItem('jwt_token');
-        document.getElementById('dashboardSection').classList.add('d-none');
-        document.getElementById('authSection').classList.remove('d-none');
-        selectedCourses = [];
-        hideAlert();
+        window.location.replace('login.html');
     }
 
     document.getElementById('logoutBtn').addEventListener('click', logout);
-    document.getElementById('refreshEnrollmentsBtn').addEventListener('click', loadMyEnrollments);
 </script>
 
 </body>

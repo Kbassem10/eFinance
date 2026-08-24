@@ -426,6 +426,12 @@ public class StudentRepository : IStudentRepository
                 }
                 else
                 {
+                    const string updateEnrollmentSql = @"
+                        UPDATE Enrollments SET EnrollmentStatusId = 5, RegistrationDate = UTC_TIMESTAMP()
+                        WHERE EnrollmentId = @EnrollmentId;";
+                    await using var updCmd = await CreateCommandAsync(updateEnrollmentSql);
+                    updCmd.Parameters.AddWithValue("@EnrollmentId", existingEnrollmentId);
+                    await updCmd.ExecuteNonQueryAsync(cancellationToken);
                     enrollmentId = existingEnrollmentId;
                 }
 
@@ -464,12 +470,12 @@ public class StudentRepository : IStudentRepository
         }
     }
 
-    public async Task<IReadOnlyList<EnrollmentResultDto>> GetStudentEnrollmentsAsync(int studentId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<EnrollmentResultDto>> GetStudentEnrollmentsAsync(int studentId, EnrollmentFilterDto? filter = null, CancellationToken cancellationToken = default)
     {
         var list = new List<EnrollmentResultDto>();
         try
         {
-            const string sql = @"
+            var sqlBuilder = new System.Text.StringBuilder(@"
                 SELECT 
                     e.EnrollmentId,
                     e.StudentId,
@@ -482,11 +488,57 @@ public class StudentRepository : IStudentRepository
                 INNER JOIN CourseOfferings co ON e.CourseOfferingId = co.CourseOfferingId
                 INNER JOIN Courses c ON co.CourseId = c.CourseId
                 INNER JOIN EnrollmentStatuses es ON e.EnrollmentStatusId = es.EnrollmentStatusId
-                WHERE e.StudentId = @StudentId
-                ORDER BY e.EnrollmentId DESC;";
+                WHERE e.StudentId = @StudentId");
 
-            await using var command = await CreateCommandAsync(sql);
+            if (filter?.StartDate.HasValue == true)
+            {
+                sqlBuilder.Append(" AND e.RegistrationDate >= @StartDate");
+            }
+
+            if (filter?.EndDate.HasValue == true)
+            {
+                sqlBuilder.Append(" AND e.RegistrationDate <= @EndDate");
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter?.Status))
+            {
+                sqlBuilder.Append(" AND (LOWER(es.StatusName) = LOWER(@Status) OR (@Status = 'Enrolled' AND LOWER(es.StatusName) IN ('enrolled', 'approved', 'active')))");
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter?.SearchTerm))
+            {
+                sqlBuilder.Append(" AND (c.CourseCode LIKE @SearchPattern OR c.CourseName LIKE @SearchPattern OR CAST(e.EnrollmentId AS CHAR) LIKE @SearchPattern OR es.StatusName LIKE @SearchPattern)");
+            }
+
+            sqlBuilder.Append(" ORDER BY e.EnrollmentId DESC;");
+
+            await using var command = await CreateCommandAsync(sqlBuilder.ToString());
             command.Parameters.AddWithValue("@StudentId", studentId);
+
+            if (filter?.StartDate.HasValue == true)
+            {
+                command.Parameters.AddWithValue("@StartDate", filter.StartDate.Value);
+            }
+
+            if (filter?.EndDate.HasValue == true)
+            {
+                var endDate = filter.EndDate.Value;
+                if (endDate.TimeOfDay == TimeSpan.Zero)
+                {
+                    endDate = endDate.Date.AddDays(1).AddTicks(-1);
+                }
+                command.Parameters.AddWithValue("@EndDate", endDate);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter?.Status))
+            {
+                command.Parameters.AddWithValue("@Status", filter.Status.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter?.SearchTerm))
+            {
+                command.Parameters.AddWithValue("@SearchPattern", $"%{filter.SearchTerm.Trim()}%");
+            }
 
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
