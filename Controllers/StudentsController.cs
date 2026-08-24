@@ -65,7 +65,7 @@ public class StudentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById([FromRoute] int id, CancellationToken cancellationToken)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int currentUserId))
@@ -100,7 +100,7 @@ public class StudentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetByStudentNumber(string studentNumber)
+    public async Task<IActionResult> GetByStudentNumber([FromRoute] string studentNumber)
     {
         var student = await _unitOfWork.Students.GetByStudentNumberAsync(studentNumber);
         if (student == null)
@@ -163,7 +163,7 @@ public class StudentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateStudentDto dto)
+    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStudentDto dto)
     {
         if (dto == null)
         {
@@ -195,7 +195,7 @@ public class StudentsController : ControllerBase
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
         {
@@ -221,7 +221,7 @@ public class StudentsController : ControllerBase
 
     [HttpGet("{id:int}/credit-hours/{semesterId:int}")]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetTotalCreditHours(int id, int semesterId)
+    public async Task<IActionResult> GetTotalCreditHours([FromRoute] int id, [FromRoute] int semesterId)
     {
         int hours = await _unitOfWork.Students.GetTotalCreditHoursAsync(id, semesterId);
         return Ok(new { studentId = id, semesterId = semesterId, totalCreditHours = hours });
