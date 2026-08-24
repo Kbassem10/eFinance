@@ -126,9 +126,9 @@
             <!-- 2. COURSES MANAGEMENT TAB -->
             <div class="tab-pane fade" id="coursesPane" role="tabpanel">
                 <div class="card bg-dark border-secondary">
-                    <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+                    <div class="card-header border-secondary d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <span class="fw-semibold text-white">Course Catalog & Live Offerings</span>
-                        <div>
+                        <div class="d-flex gap-2">
                             <button id="addCourseBtn" class="btn btn-sm btn-success fw-bold">+ Add Course</button>
                         </div>
                     </div>
@@ -569,8 +569,8 @@
         }
     };
 
-    document.getElementById('enrollmentStatusFilter').addEventListener('change', loadEnrollments);
-    document.getElementById('refreshEnrollmentsBtn').addEventListener('click', loadEnrollments);
+    document.getElementById('enrollmentStatusFilter')?.addEventListener('change', loadEnrollments);
+    document.getElementById('refreshEnrollmentsBtn')?.addEventListener('click', loadEnrollments);
 
     // 3. Load Courses
     async function loadCourses() {
@@ -607,7 +607,7 @@
     }
 
     // 4. Add & Edit Course Handlers
-    document.getElementById('addCourseBtn').addEventListener('click', () => {
+    document.getElementById('addCourseBtn')?.addEventListener('click', () => {
         document.getElementById('courseModalTitle').textContent = 'Add Course & Configure Relational Offerings';
         document.getElementById('courseModalId').value = '';
         document.getElementById('courseCode').value = '';
@@ -635,7 +635,7 @@
         courseModalInstance.show();
     };
 
-    document.getElementById('courseForm').addEventListener('submit', async (e) => {
+    document.getElementById('courseForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('courseModalId').value;
         const deptId = parseInt(document.getElementById('departmentId').value, 10);
@@ -765,8 +765,8 @@
         }
     };
 
-    document.getElementById('searchUserBtn').addEventListener('click', () => {
-        const idVal = document.getElementById('searchUserIdInput').value.trim();
+    document.getElementById('searchUserBtn')?.addEventListener('click', () => {
+        const idVal = document.getElementById('searchUserIdInput')?.value?.trim();
         if (idVal) {
             viewUserDetails(parseInt(idVal, 10));
         } else {
@@ -776,14 +776,14 @@
 
     function logout() {
         localStorage.removeItem('admin_jwt_token');
-        document.getElementById('dashboardSection').classList.add('d-none');
-        document.getElementById('authSection').classList.remove('d-none');
+        document.getElementById('dashboardSection')?.classList.add('d-none');
+        document.getElementById('authSection')?.classList.remove('d-none');
         hideAlert();
     }
 
-    document.getElementById('logoutBtn').addEventListener('click', logout);
-    document.getElementById('refreshCoursesBtn').addEventListener('click', loadCourses);
-    document.getElementById('refreshUsersBtn').addEventListener('click', loadUsers);
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+    document.getElementById('refreshCoursesBtn')?.addEventListener('click', loadCourses);
+    document.getElementById('refreshUsersBtn')?.addEventListener('click', loadUsers);
 </script>
 
 </body>
