@@ -155,4 +155,97 @@ public class UserRepository : IUserRepository
             throw;
         }
     }
+
+    public async Task<IReadOnlyList<Role>> GetUserRolesAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var roles = new List<Role>();
+        try
+        {
+            const string sql = @"
+                SELECT r.RoleId, r.RoleName
+                FROM UserRoles ur
+                INNER JOIN Roles r ON ur.RoleId = r.RoleId
+                WHERE ur.UserId = @UserId;";
+
+            await using var command = await CreateCommandAsync(sql);
+            command.Parameters.AddWithValue("@UserId", userId);
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                roles.Add(new Role
+                {
+                    RoleId = reader.GetInt32("RoleId"),
+                    RoleName = reader.GetString("RoleName")
+                });
+            }
+
+            return roles;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving roles for user ID {UserId}", userId);
+            throw;
+        }
+    }
+
+    public async Task<IReadOnlyList<int>> GetUserRoleIdsAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var roleIds = new List<int>();
+        try
+        {
+            const string sql = "SELECT RoleId FROM UserRoles WHERE UserId = @UserId;";
+
+            await using var command = await CreateCommandAsync(sql);
+            command.Parameters.AddWithValue("@UserId", userId);
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                roleIds.Add(reader.GetInt32("RoleId"));
+            }
+
+            return roleIds;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving role IDs for user ID {UserId}", userId);
+            throw;
+        }
+    }
+
+    public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var list = new List<User>();
+        try
+        {
+            const string sql = @"
+                SELECT UserId, Email, PasswordHash, IsActive, CreatedAt, UpdatedAt
+                FROM Users
+                ORDER BY UserId ASC;";
+
+            await using var command = await CreateCommandAsync(sql);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                list.Add(new User
+                {
+                    UserId = reader.GetInt32("UserId"),
+                    Email = reader.GetString("Email"),
+                    PasswordHash = reader.GetString("PasswordHash"),
+                    IsActive = reader.GetBoolean("IsActive"),
+                    CreatedAt = reader.GetDateTime("CreatedAt"),
+                    UpdatedAt = reader.GetDateTime("UpdatedAt")
+                });
+            }
+
+            return list;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving all users");
+            throw;
+        }
+    }
 }

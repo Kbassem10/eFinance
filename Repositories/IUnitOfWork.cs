@@ -5,6 +5,7 @@ public interface IUnitOfWork : IAsyncDisposable
 {
     IStudentRepository Students { get; }
     IUserRepository Users { get; }
+    ICoursesRepository Courses { get; }
 
     Task BeginTransactionAsync();
     Task CommitAsync();

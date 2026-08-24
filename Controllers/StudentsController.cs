@@ -139,7 +139,7 @@ public class StudentsController : ControllerBase
             var passwordHash = BCrypt.Net.BCrypt.EnhancedHashPassword(dto.Password, 11);
             int newUserId = await _unitOfWork.Users.CreateAsync(dto.Email, passwordHash, cancellationToken);
 
-            const int studentRoleId = 2; // Student Role
+            const int studentRoleId = 3; // Student Role
             await _unitOfWork.Users.AssignRoleAsync(newUserId, studentRoleId, cancellationToken);
 
             int newStudentId = await _unitOfWork.Students.CreateAsync(newUserId, dto, cancellationToken);
@@ -242,6 +242,12 @@ public class StudentsController : ControllerBase
         if (user == null || !BCrypt.Net.BCrypt.EnhancedVerify(dto.Password, user.PasswordHash))
         {
             return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        var roleIds = await _unitOfWork.Users.GetUserRoleIdsAsync(user.UserId, cancellationToken);
+        if (!roleIds.Contains(3) && !roleIds.Contains(2))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Access denied. User does not have Student permissions (RoleId 3)." });
         }
 
         var student = await _unitOfWork.Students.GetByUserIdAsync(user.UserId, cancellationToken);
