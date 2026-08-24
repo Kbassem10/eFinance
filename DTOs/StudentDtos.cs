@@ -113,3 +113,19 @@ public record LoginResponseDto(
     DateTime ExpiresAt,
     StudentDetailsDto Student
 );
+
+public record EnrollCoursesRequestDto
+{
+    public List<int> CourseIds { get; init; } = new();
+}
+
+public record EnrollmentResultDto
+{
+    public int EnrollmentId { get; init; }
+    public int StudentId { get; init; }
+    public int CourseId { get; init; }
+    public string CourseCode { get; init; } = string.Empty;
+    public string CourseName { get; init; } = string.Empty;
+    public string Status { get; init; } = "Pending";
+    public DateTime RegistrationDate { get; init; }
+}

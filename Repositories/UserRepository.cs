@@ -1,6 +1,7 @@
 using System.Data;
 using Microsoft.Extensions.Logging;
 using MySqlConnector;
+using StudentRegistrationPortal.Api.DTOs;
 using StudentRegistrationPortal.Api.Entities;
 
 namespace StudentRegistrationPortal.Api.Repositories;
@@ -245,6 +246,137 @@ public class UserRepository : IUserRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving all users");
+            throw;
+        }
+    }
+
+    public async Task<AdminDetailsDto?> GetUserDetailsByIdAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            const string sql = @"
+                SELECT UserId, Email, PasswordHash, IsActive, CreatedAt, UpdatedAt
+                FROM Users
+                WHERE UserId = @UserId
+                LIMIT 1;";
+
+            AdminDetailsDto? user = null;
+            await using (var command = await CreateCommandAsync(sql))
+            {
+                command.Parameters.AddWithValue("@UserId", userId);
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+                if (await reader.ReadAsync(cancellationToken))
+                {
+                    user = new AdminDetailsDto
+                    {
+                        UserId = reader.GetInt32("UserId"),
+                        Email = reader.GetString("Email"),
+                        IsActive = reader.GetBoolean("IsActive"),
+                        CreatedAt = reader.GetDateTime("CreatedAt"),
+                        UpdatedAt = reader.GetDateTime("UpdatedAt")
+                    };
+                }
+            }
+
+            if (user == null) return null;
+
+            var roles = await GetUserRolesAsync(userId, cancellationToken);
+            return user with { Roles = roles.Select(r => r.RoleName).ToList() };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving user details for user ID {UserId}", userId);
+            throw;
+        }
+    }
+
+    public async Task<AdminLookupsDto> GetLookupsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var depts = new List<LookupItemDto>();
+            const string deptSql = "SELECT DepartmentId, DepartmentName, DepartmentCode FROM Departments ORDER BY DepartmentName ASC;";
+            await using (var cmd = await CreateCommandAsync(deptSql))
+            {
+                await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+                while (await r.ReadAsync(cancellationToken))
+                {
+                    depts.Add(new LookupItemDto(
+                        r.GetInt32("DepartmentId"),
+                        $"{r.GetString("DepartmentName")} ({r.GetString("DepartmentCode")})"
+                    ));
+                }
+            }
+
+            var semesters = new List<LookupItemDto>();
+            const string semSql = "SELECT SemesterId, SemesterName, AcademicYear FROM Semesters ORDER BY SemesterId ASC;";
+            await using (var cmd = await CreateCommandAsync(semSql))
+            {
+                await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+                while (await r.ReadAsync(cancellationToken))
+                {
+                    semesters.Add(new LookupItemDto(
+                        r.GetInt32("SemesterId"),
+                        r.GetString("SemesterName")
+                    ));
+                }
+            }
+
+            var instructors = new List<LookupItemDto>();
+            const string instSql = "SELECT InstructorId, FirstName, LastName, AcademicTitle FROM Instructors ORDER BY FirstName, LastName ASC;";
+            await using (var cmd = await CreateCommandAsync(instSql))
+            {
+                await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+                while (await r.ReadAsync(cancellationToken))
+                {
+                    var title = r.IsDBNull("AcademicTitle") ? "Faculty" : r.GetString("AcademicTitle");
+                    instructors.Add(new LookupItemDto(
+                        r.GetInt32("InstructorId"),
+                        $"{r.GetString("FirstName")} {r.GetString("LastName")} ({title})"
+                    ));
+                }
+            }
+
+            var rooms = new List<LookupItemDto>();
+            const string roomSql = "SELECT RoomId, BuildingName, RoomNumber, Capacity FROM Rooms ORDER BY BuildingName, RoomNumber ASC;";
+            await using (var cmd = await CreateCommandAsync(roomSql))
+            {
+                await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+                while (await r.ReadAsync(cancellationToken))
+                {
+                    rooms.Add(new LookupItemDto(
+                        r.GetInt32("RoomId"),
+                        $"{r.GetString("BuildingName")} - Room {r.GetString("RoomNumber")} (Cap: {r.GetInt32("Capacity")})"
+                    ));
+                }
+            }
+
+            var statuses = new List<LookupItemDto>();
+            const string statusSql = "SELECT CourseStatusId, StatusName FROM CourseStatuses ORDER BY CourseStatusId ASC;";
+            await using (var cmd = await CreateCommandAsync(statusSql))
+            {
+                await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+                while (await r.ReadAsync(cancellationToken))
+                {
+                    statuses.Add(new LookupItemDto(
+                        r.GetInt32("CourseStatusId"),
+                        r.GetString("StatusName")
+                    ));
+                }
+            }
+
+            return new AdminLookupsDto
+            {
+                Departments = depts,
+                Semesters = semesters,
+                Instructors = instructors,
+                Rooms = rooms,
+                CourseStatuses = statuses
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving database lookups");
             throw;
         }
     }

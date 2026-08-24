@@ -59,6 +59,70 @@ public class StudentsController : ControllerBase
         return Ok(student);
     }
 
+    [HttpGet("me/enrollments")]
+    [ProducesResponseType(typeof(IReadOnlyList<EnrollmentResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMyEnrollments(CancellationToken cancellationToken)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int currentUserId))
+        {
+            return Unauthorized(new { message = "Invalid token claims." });
+        }
+
+        var student = await _unitOfWork.Students.GetByUserIdAsync(currentUserId, cancellationToken);
+        if (student == null)
+        {
+            return NotFound(new { message = "No student profile associated with your account." });
+        }
+
+        var list = await _unitOfWork.Students.GetStudentEnrollmentsAsync(student.StudentId, cancellationToken);
+        return Ok(list);
+    }
+
+    [HttpPost("me/enrollments")]
+    [ProducesResponseType(typeof(IReadOnlyList<EnrollmentResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EnrollInCourses([FromBody] EnrollCoursesRequestDto dto, CancellationToken cancellationToken)
+    {
+        if (dto == null || dto.CourseIds == null || dto.CourseIds.Count == 0)
+        {
+            return BadRequest(new { message = "Please provide at least one course ID to enroll." });
+        }
+
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int currentUserId))
+        {
+            return Unauthorized(new { message = "Invalid token claims." });
+        }
+
+        var student = await _unitOfWork.Students.GetByUserIdAsync(currentUserId, cancellationToken);
+        if (student == null)
+        {
+            return NotFound(new { message = "No student profile associated with your account." });
+        }
+
+        try
+        {
+            await _unitOfWork.BeginTransactionAsync();
+
+            var enrollments = await _unitOfWork.Students.EnrollInCoursesAsync(student.StudentId, dto.CourseIds, cancellationToken);
+
+            await _unitOfWork.CommitAsync();
+
+            return Ok(enrollments);
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackAsync();
+            _logger.LogError(ex, "Failed to enroll student ID {StudentId}.", student.StudentId);
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

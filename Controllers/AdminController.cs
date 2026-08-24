@@ -147,4 +147,85 @@ public class AdminController : ControllerBase
         await _unitOfWork.Users.AssignRoleAsync(userId, roleId, cancellationToken);
         return Ok(new { message = $"Role ID {roleId} assigned to User ID {userId} successfully." });
     }
+
+    [HttpGet("enrollments")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(IReadOnlyList<AdminEnrollmentDetailsDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetEnrollments([FromQuery] int? statusId, CancellationToken cancellationToken)
+    {
+        var list = await _unitOfWork.Students.GetAllEnrollmentsAsync(statusId, cancellationToken);
+        return Ok(list);
+    }
+
+    [HttpPut("enrollments/{id:int}/approve")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ApproveEnrollment([FromRoute] int id, CancellationToken cancellationToken)
+    {
+        const int enrolledStatusId = 1; // Enrolled
+        bool updated = await _unitOfWork.Students.UpdateEnrollmentStatusAsync(id, enrolledStatusId, cancellationToken);
+        if (!updated)
+        {
+            return NotFound(new { message = $"Enrollment record with ID {id} not found." });
+        }
+        return Ok(new { message = $"Enrollment ID {id} approved successfully (Status: Enrolled)." });
+    }
+
+    [HttpPut("enrollments/{id:int}/decline")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeclineEnrollment([FromRoute] int id, CancellationToken cancellationToken)
+    {
+        const int droppedStatusId = 3; // Dropped / Declined
+        bool updated = await _unitOfWork.Students.UpdateEnrollmentStatusAsync(id, droppedStatusId, cancellationToken);
+        if (!updated)
+        {
+            return NotFound(new { message = $"Enrollment record with ID {id} not found." });
+        }
+        return Ok(new { message = $"Enrollment ID {id} declined successfully (Status: Dropped/Declined)." });
+    }
+
+    [HttpPut("enrollments/{id:int}/status")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateEnrollmentStatus([FromRoute] int id, [FromBody] UpdateEnrollmentStatusDto dto, CancellationToken cancellationToken)
+    {
+        if (dto == null || dto.EnrollmentStatusId <= 0)
+        {
+            return BadRequest(new { message = "Valid EnrollmentStatusId is required." });
+        }
+
+        bool updated = await _unitOfWork.Students.UpdateEnrollmentStatusAsync(id, dto.EnrollmentStatusId, cancellationToken);
+        if (!updated)
+        {
+            return NotFound(new { message = $"Enrollment record with ID {id} not found." });
+        }
+        return Ok(new { message = $"Enrollment ID {id} updated to Status ID {dto.EnrollmentStatusId} successfully." });
+    }
+
+    [HttpGet("users/{userId:int}")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(AdminDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUserById([FromRoute] int userId, CancellationToken cancellationToken)
+    {
+        var user = await _unitOfWork.Users.GetUserDetailsByIdAsync(userId, cancellationToken);
+        if (user == null)
+        {
+            return NotFound(new { message = $"User with ID {userId} was not found." });
+        }
+        return Ok(user);
+    }
+
+    [HttpGet("lookups")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(AdminLookupsDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLookups(CancellationToken cancellationToken)
+    {
+        var lookups = await _unitOfWork.Users.GetLookupsAsync(cancellationToken);
+        return Ok(lookups);
+    }
 }

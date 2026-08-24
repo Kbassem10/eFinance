@@ -13,4 +13,8 @@ public interface IStudentRepository
     Task<bool> UpdateAsync(int studentId, UpdateStudentDto dto);
     Task<bool> DeleteAsync(int studentId);
     Task<int> GetTotalCreditHoursAsync(int studentId, int semesterId);
+    Task<IReadOnlyList<EnrollmentResultDto>> EnrollInCoursesAsync(int studentId, IReadOnlyList<int> courseIds, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<EnrollmentResultDto>> GetStudentEnrollmentsAsync(int studentId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AdminEnrollmentDetailsDto>> GetAllEnrollmentsAsync(int? statusId = null, CancellationToken cancellationToken = default);
+    Task<bool> UpdateEnrollmentStatusAsync(int enrollmentId, int statusId, CancellationToken cancellationToken = default);
 }
