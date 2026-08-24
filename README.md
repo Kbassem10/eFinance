@@ -32,37 +32,37 @@ An enterprise-grade academic management system designed to handle university stu
 
 ## 1. Project Overview & Architecture
 
-The application adopts a **3-Tier / Domain-Driven Design (DDD)** architecture with **Pure ADO.NET**:
+The application adopts a modular **Clean Architecture (Onion / Hexagonal)** with **Native ADO.NET (MySqlConnector)** and Dependency Inversion:
 
 ```mermaid
 graph TD
-    Client["Client / WebApp / Mobile Consumer"] -->|HTTP / JSON| API["ASP.NET Core 10 Web API (Controllers)"]
-    API -->|Dependency Injection| Repos["Repository Layer (IStudentRepository, etc.)"]
-    Repos -->|Defensive ADO.NET & Extensions| DbAccess["ISqlDataAccess / IDbConnectionFactory"]
-    DbAccess -->|MySqlConnector Driver| DB[("MySQL 8.4 Database")]
-```
-
-    subgraph "Core Domain Entities"
-        Students["Students"]
-        Instructors["Instructors"]
-        Courses["Courses"]
-        Enrollments["Enrollments"]
-        Schedules["Course Schedules & Sessions"]
-        Lectures["Lectures & Attendance"]
-    end
-
-    API --- Students
-    API --- Instructors
-    API --- Courses
-    API --- Enrollments
-    API --- Schedules
-    API --- Lectures
+    Client["Client / WebApp / Mobile Consumer"] -->|HTTP / JSON| API["StudentRegistrationPortal.Api (Controllers, OpenAPI, Static UI)"]
+    API --> APP["StudentRegistrationPortal.Application (DTOs, Validators, Interfaces)"]
+    API --> INFRA["StudentRegistrationPortal.Infrastructure (Repositories, UnitOfWork, Migrations, JWT)"]
+    INFRA --> APP
+    INFRA --> DOM["StudentRegistrationPortal.Domain (Entities, Enums)"]
+    APP --> DOM
+    INFRA -->|MySqlConnector Driver| DB[("MySQL 8.4 Database")]
 ```
 
 ### Layer Breakdown
-* **Database Layer (MySQL)**: 24 relational tables enforcing referential integrity, indexes, views, stored procedures, functions, and audit triggers.
-* **API Layer (C# .NET 10 Web API)**: RESTful controllers, dependency injection, validation middleware, and EF Core data mapping.
-* **WebApp / Client Consumer**: Frontend application consuming REST endpoints for student self-service registration and administrative oversight.
+
+1. **`StudentRegistrationPortal.Domain`** (Core):
+   - Pure domain models (`Entities/`, `Enums/`).
+   - Zero external dependencies.
+2. **`StudentRegistrationPortal.Application`** (Core):
+   - Repositories & Service Contracts (`IStudentRepository`, `IUserRepository`, `ICoursesRepository`, `IUnitOfWork`, `IJwtTokenService`).
+   - Data Transfer Objects (`DTOs/`).
+   - Request Validators (`Validators/` with `FluentValidation`).
+   - DI extensions (`AddApplicationServices`).
+3. **`StudentRegistrationPortal.Infrastructure`** (DAL & External Services):
+   - MySQL ADO.NET Repositories implementation (`UserRepository`, `StudentRepository`, `CoursesRepository`, `UnitOfWork`).
+   - Database Migration Runner (`DatabaseMigrator`) with embedded SQL scripts.
+   - JWT Service implementation (`JwtTokenService`).
+   - DI extensions (`AddInfrastructureServices`).
+4. **`StudentRegistrationPortal.Api`** (Composition Root / Presentation):
+   - RESTful Controllers (`AdminController`, `CoursesController`, `StudentsController`).
+   - API Versioning, JSON converters, OpenAPI/Swagger UI, and Static Files (`wwwroot`).
 
 ---
 
