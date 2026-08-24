@@ -29,7 +29,6 @@ public class StudentsController : ControllerBase
     }
     
     [HttpGet]
-    [Authorize(Roles = "Admin,Registrar")]
     [ProducesResponseType(typeof(IReadOnlyList<StudentDetailsDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -95,7 +94,6 @@ public class StudentsController : ControllerBase
     }
 
     [HttpGet("by-number/{studentNumber}")]
-    [Authorize(Roles = "Admin,Registrar")]
     [ProducesResponseType(typeof(StudentDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
