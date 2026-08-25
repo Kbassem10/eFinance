@@ -6,7 +6,7 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "publish",
-      "program": "${workspaceFolder}/bin/Debug/net10.0/linux-x64/publish/StudentRegistrationPortal.Api",
+      "program": "${workspaceFolder}/src/StudentRegistrationPortal.Api/bin/Debug/net10.0/linux-x64/publish/StudentRegistrationPortal.Api",
       "args": [],
       "cwd": "${workspaceFolder}",
       "stopAtEntry": false,

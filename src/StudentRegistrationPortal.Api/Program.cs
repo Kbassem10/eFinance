@@ -7,15 +7,11 @@ using StudentRegistrationPortal.Infrastructure.Persistence.Migrations;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ==========================================
-// 1. Clean Architecture Layer Registrations
-// ==========================================
+// Service Registrations
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
-// ==========================================
-// 2. API Versioning Configuration
-// ==========================================
+// API Versioning
 builder.Services.AddApiVersioning(options =>
 {
     options.DefaultApiVersion = new ApiVersion(1, 0);
@@ -28,9 +24,7 @@ builder.Services.AddApiVersioning(options =>
     options.SubstituteApiVersionInUrl = false;
 });
 
-// ==========================================
-// 3. Controllers & Serialization Configuration
-// ==========================================
+// Controllers & Serialization
 builder.Services.AddFluentValidationAutoValidation();
 
 builder.Services.AddControllers()
@@ -41,9 +35,7 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
-// ==========================================
-// 4. OpenAPI & Swagger UI Configuration
-// ==========================================
+// OpenAPI & Swagger
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer((document, context, cancellationToken) =>
@@ -90,9 +82,7 @@ builder.Services.AddOpenApi(options =>
 
 var app = builder.Build();
 
-// ==========================================
-// 5. Auto-Apply Database Migrations on Startup
-// ==========================================
+// Database Migration on startup
 var connectionString = app.Configuration.GetConnectionString("DefaultConnection");
 if (!string.IsNullOrWhiteSpace(connectionString))
 {
@@ -100,9 +90,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     migrator.MigrateDatabase(connectionString);
 }
 
-// ==========================================
-// 6. HTTP Request Pipeline Configuration
-// ==========================================
+// HTTP Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -121,4 +109,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
 

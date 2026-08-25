@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Students Directory</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background-color: #f4f6f9; min-height: 100vh; display: flex; flex-direction: column; }
+        .dashboard-card { max-width: 1150px; width: 100%; margin: 40px auto; border-radius: 12px; }
+        .btn-admin { background-color: #dc2626; border-color: #dc2626; color: #fff; }
+        .btn-admin:hover { background-color: #b91c1c; border-color: #b91c1c; color: #fff; }
+        .table-responsive { border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="container my-4">
+    <div id="alertBox" class="alert d-none mx-auto mb-3" style="max-width: 1150px;" role="alert"></div>
+
+    <div id="dashboardSection" class="card shadow-sm dashboard-card p-4 border-0">
+        <!-- Top Navigation Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-3 gap-2">
+            <div>
+                <span class="badge bg-danger text-uppercase me-1 px-2 py-1">Administrator</span>
+                <h4 class="mb-0 d-inline align-middle fw-bold">Welcome, <span id="adminProfileEmail" class="text-danger">Loading...</span></h4>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="admin.html" class="btn btn-outline-secondary btn-sm fw-semibold">
+                    Approvals & Requests <span id="pendingCountBadge" class="badge bg-secondary ms-1">0</span>
+                </a>
+                <a href="admin-courses.html" class="btn btn-outline-secondary btn-sm fw-semibold">
+                    Course Management
+                </a>
+                <a href="admin-students.html" class="btn btn-danger btn-sm active fw-semibold shadow-sm">
+                    Students
+                </a>
+                <button id="logoutBtn" class="btn btn-outline-danger btn-sm fw-semibold">
+                    Log Out
+                </button>
+            </div>
+        </div>
+
+        <!-- Admin Profile Summary Bar -->
+        <div class="card mb-4 bg-light border-0">
+            <div class="card-body py-3">
+                <div class="row g-2 small">
+                    <div class="col-md-3 col-6"><strong>User ID:</strong> <span id="adminProfileId">-</span></div>
+                    <div class="col-md-3 col-6"><strong>Email:</strong> <span id="adminProfileEmailText">-</span></div>
+                    <div class="col-md-3 col-6"><strong>Roles:</strong> <span id="adminRolesBadges"><span class="badge bg-danger">Admin</span></span></div>
+                    <div class="col-md-3 col-6"><strong>Status:</strong> <span id="adminStatusBadge" class="badge bg-success">Active</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students Directory Section -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark">Enrolled Students Directory</h5>
+                    <small class="text-muted">Browse student profiles, academic departments, GPAs, and enrollment statuses</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="refreshBtn" class="btn btn-outline-secondary btn-sm" title="Refresh Students">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Organized Search & Filter Toolbar -->
+            <div class="card-body bg-light border-bottom p-3">
+                <div class="row g-3 align-items-center">
+                    <div class="col-lg-7 col-md-12">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" id="studentSearchInput" class="form-control" placeholder="Search by student name, number, email, or department...">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">Clear</button>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <select id="departmentFilter" class="form-select form-select-sm">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-6">
+                        <select id="statusFilter" class="form-select form-select-sm">
+                            <option value="">All Statuses</option>
+                            <option value="Active">Active</option>
+                            <option value="Suspended">Suspended</option>
+                            <option value="Graduated">Graduated</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Table -->
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 70px;">ID</th>
+                                <th>Student Number</th>
+                                <th>Full Name & Email</th>
+                                <th>Department</th>
+                                <th>Level & GPA</th>
+                                <th>Status</th>
+                                <th class="text-end pe-3" style="min-width: 130px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody">
+                            <tr><td colspan="7" class="text-center text-muted py-4">Loading student records...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white py-2 text-muted small d-flex justify-content-between align-items-center">
+                <span id="studentsCountText">Showing 0 students</span>
+                <span>Student Records Management</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= STUDENT DETAILS MODAL ================= -->
+<div class="modal fade" id="studentModal" tabindex="-1" aria-labelledby="studentModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="studentModalTitle">
+                    <i class="bi bi-person-lines-fill me-1"></i> Student Profile Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Personal Information -->
+                <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+                    <i class="bi bi-person-circle me-1"></i> 1. Personal Information
+                </h6>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-semibold">Full Name</label>
+                        <div id="modalFullName" class="fw-bold text-dark">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-semibold">Student Number</label>
+                        <div id="modalStudentNumber" class="fw-bold text-dark">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-semibold">Email Address</label>
+                        <div id="modalEmail" class="text-dark">-</div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-semibold">Phone Number</label>
+                        <div id="modalPhone" class="text-dark">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-semibold">National ID</label>
+                        <div id="modalNationalId" class="text-dark">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-semibold">Date of Birth</label>
+                        <div id="modalDob" class="text-dark">-</div>
+                    </div>
+                </div>
+
+                <!-- Academic Information -->
+                <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+                    <i class="bi bi-mortarboard me-1"></i> 2. Academic Information
+                </h6>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-semibold">Department</label>
+                        <div id="modalDepartment" class="fw-semibold text-dark">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-semibold">Academic Level</label>
+                        <div id="modalLevel" class="text-dark">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-semibold">Cumulative GPA</label>
+                        <div id="modalGpa" class="fw-bold text-dark">-</div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-semibold">Completed Credit Hours</label>
+                        <div id="modalCredits" class="text-dark">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-semibold">Admission Date</label>
+                        <div id="modalAdmissionDate" class="text-dark">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-semibold">Academic Status</label>
+                        <div id="modalStatus">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API_BASE = '/api';
+    const API_VERSION = '1.0';
+    let studentModalInstance = null;
+    let allStudents = [];
+
+    async function apiRequest(url, options = {}) {
+        options.headers = options.headers || {};
+        options.headers['X-Api-Version'] = API_VERSION;
+        options.headers['Content-Type'] = 'application/json';
+
+        const token = localStorage.getItem('admin_jwt_token');
+        if (token) {
+            options.headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(url, options);
+        const data = await response.json().catch(() => null);
+
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('admin_jwt_token');
+            window.location.replace('adminlogin.html');
+            return null;
+        }
+
+        if (!response.ok) {
+            const errorMsg = data?.message || data?.detail || `Error (${response.status}): ${response.statusText}`;
+            throw new Error(errorMsg);
+        }
+        return data;
+    }
+
+    function showAlert(message, type = 'danger') {
+        const alertBox = document.getElementById('alertBox');
+        if (!alertBox) return;
+        alertBox.className = `alert alert-${type} mx-auto mb-3 shadow-sm`;
+        alertBox.innerHTML = message;
+        alertBox.classList.remove('d-none');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function hideAlert() {
+        const alertBox = document.getElementById('alertBox');
+        if (alertBox) alertBox.classList.add('d-none');
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        const token = localStorage.getItem('admin_jwt_token');
+        if (!token) {
+            window.location.replace('adminlogin.html');
+            return;
+        }
+
+        studentModalInstance = new bootstrap.Modal(document.getElementById('studentModal'));
+        await loadProfile();
+        await loadPendingCount();
+        await loadLookups();
+        await loadStudents();
+    });
+
+    async function loadProfile() {
+        try {
+            const admin = await apiRequest(`${API_BASE}/admin/me`, { method: 'GET' });
+            if (!admin) return;
+
+            document.getElementById('adminProfileEmail').textContent = admin.email || 'Admin';
+            document.getElementById('adminProfileEmailText').textContent = admin.email || '-';
+            document.getElementById('adminProfileId').textContent = admin.userId ? `#${admin.userId}` : '-';
+            
+            const badgesContainer = document.getElementById('adminRolesBadges');
+            badgesContainer.innerHTML = '';
+            (admin.roles || ['Admin']).forEach(r => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-danger me-1';
+                badge.textContent = r;
+                badgesContainer.appendChild(badge);
+            });
+
+            document.getElementById('adminStatusBadge').textContent = admin.isActive ? 'Active' : 'Inactive';
+            document.getElementById('adminStatusBadge').className = admin.isActive ? 'badge bg-success' : 'badge bg-secondary';
+        } catch (err) {
+            logout();
+        }
+    }
+
+    async function loadPendingCount() {
+        try {
+            const enrollments = await apiRequest(`${API_BASE}/admin/enrollments`, { method: 'GET' }).catch(() => []);
+            const pendingCount = (enrollments || []).filter(e => 
+                (e.statusName && e.statusName.toLowerCase() === 'pending') || e.enrollmentStatusId === 5
+            ).length;
+            document.getElementById('pendingCountBadge').textContent = pendingCount;
+        } catch (e) {
+            console.error('Failed to load pending badge:', e);
+        }
+    }
+
+    async function loadLookups() {
+        try {
+            const lookups = await apiRequest(`${API_BASE}/admin/lookups`, { method: 'GET' });
+            if (lookups?.departments?.length) {
+                const sel = document.getElementById('departmentFilter');
+                lookups.departments.forEach(dept => {
+                    const opt = document.createElement('option');
+                    opt.value = dept.name;
+                    opt.textContent = dept.name;
+                    sel.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.error('Failed to load lookups:', e);
+        }
+    }
+
+    async function loadStudents() {
+        const tbody = document.getElementById('studentsTableBody');
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Loading student records...</td></tr>`;
+
+        try {
+            const students = await apiRequest(`${API_BASE}/students`, { method: 'GET' });
+            allStudents = students || [];
+            renderStudentsTable();
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-danger text-center py-3">${err.message}</td></tr>`;
+        }
+    }
+
+    function renderStudentsTable() {
+        const tbody = document.getElementById('studentsTableBody');
+        const searchTerm = (document.getElementById('studentSearchInput')?.value || '').trim().toLowerCase();
+        const deptFilter = document.getElementById('departmentFilter')?.value || '';
+        const statusFilter = document.getElementById('statusFilter')?.value || '';
+
+        let filtered = allStudents;
+
+        if (deptFilter) {
+            filtered = filtered.filter(s => s.departmentName && s.departmentName.toLowerCase() === deptFilter.toLowerCase());
+        }
+
+        if (statusFilter) {
+            filtered = filtered.filter(s => s.statusName && s.statusName.toLowerCase() === statusFilter.toLowerCase());
+        }
+
+        if (searchTerm) {
+            filtered = filtered.filter(s => 
+                (s.fullName && s.fullName.toLowerCase().includes(searchTerm)) ||
+                (s.studentNumber && s.studentNumber.toLowerCase().includes(searchTerm)) ||
+                (s.email && s.email.toLowerCase().includes(searchTerm)) ||
+                (s.departmentName && s.departmentName.toLowerCase().includes(searchTerm)) ||
+                (s.departmentCode && s.departmentCode.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        document.getElementById('studentsCountText').textContent = `Showing ${filtered.length} of ${allStudents.length} students`;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No student records match the search filter.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        filtered.forEach(s => {
+            const tr = document.createElement('tr');
+            const statusClass = (s.statusName && s.statusName.toLowerCase() === 'active') ? 'bg-success' : 'bg-secondary';
+
+            tr.innerHTML = `
+                <td><span class="text-muted fw-bold">#${s.studentId}</span></td>
+                <td><span class="badge bg-light text-dark border fw-semibold">${s.studentNumber || '-'}</span></td>
+                <td>
+                    <div class="fw-bold text-dark">${s.fullName || '-'}</div>
+                    <small class="text-muted">${s.email || '-'}</small>
+                </td>
+                <td><span class="badge bg-primary-subtle text-primary border">${s.departmentName || s.departmentCode || 'General'}</span></td>
+                <td>
+                    <span class="badge bg-light text-dark border">Level ${s.academicLevel || 1}</span>
+                    <span class="badge bg-info-subtle text-dark border ms-1">GPA: ${s.gpa ? Number(s.gpa).toFixed(2) : '0.00'}</span>
+                </td>
+                <td><span class="badge ${statusClass}">${s.statusName || 'Active'}</span></td>
+                <td class="text-end pe-3">
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewStudentDetails(${s.studentId})">
+                        <i class="bi bi-person-lines-fill"></i> View Details
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    window.viewStudentDetails = async function(studentId) {
+        hideAlert();
+        try {
+            const student = await apiRequest(`${API_BASE}/students/${studentId}`, { method: 'GET' });
+            if (!student) return;
+
+            document.getElementById('modalFullName').textContent = student.fullName || '-';
+            document.getElementById('modalStudentNumber').textContent = student.studentNumber || '-';
+            document.getElementById('modalEmail').textContent = student.email || '-';
+            document.getElementById('modalPhone').textContent = student.phoneNumber || 'Not provided';
+            document.getElementById('modalNationalId').textContent = student.nationalId || 'Not provided';
+            document.getElementById('modalDob').textContent = student.dateOfBirth || '-';
+
+            document.getElementById('modalDepartment').textContent = `${student.departmentName || '-'} (${student.departmentCode || '-'})`;
+            document.getElementById('modalLevel').textContent = `Level ${student.academicLevel || 1}`;
+            document.getElementById('modalGpa').textContent = student.gpa ? Number(student.gpa).toFixed(2) : '0.00';
+            document.getElementById('modalCredits').textContent = `${student.completedCreditHours || 0} Hours`;
+            document.getElementById('modalAdmissionDate').textContent = student.admissionDate || '-';
+
+            const statusClass = (student.statusName && student.statusName.toLowerCase() === 'active') ? 'bg-success' : 'bg-secondary';
+            document.getElementById('modalStatus').innerHTML = `<span class="badge ${statusClass}">${student.statusName || 'Active'}</span>`;
+
+            studentModalInstance.show();
+        } catch (err) {
+            showAlert(`Failed to fetch student details: ${err.message}`, 'danger');
+        }
+    };
+
+    document.getElementById('studentSearchInput')?.addEventListener('input', renderStudentsTable);
+    document.getElementById('departmentFilter')?.addEventListener('change', renderStudentsTable);
+    document.getElementById('statusFilter')?.addEventListener('change', renderStudentsTable);
+    document.getElementById('clearSearchBtn')?.addEventListener('click', () => {
+        document.getElementById('studentSearchInput').value = '';
+        document.getElementById('departmentFilter').value = '';
+        document.getElementById('statusFilter').value = '';
+        renderStudentsTable();
+    });
+
+    document.getElementById('refreshBtn')?.addEventListener('click', loadStudents);
+
+    function logout() {
+        localStorage.removeItem('admin_jwt_token');
+        window.location.replace('adminlogin.html');
+    }
+
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+</script>
+
+</body>
+</html>

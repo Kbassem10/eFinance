@@ -7,7 +7,7 @@
       "type": "process",
       "args": [
         "build",
-        "${workspaceFolder}/StudentRegistrationPortal.Api.csproj",
+        "${workspaceFolder}/src/StudentRegistrationPortal.Api/StudentRegistrationPortal.Api.csproj",
         "/property:GenerateFullPaths=true",
         "/consoleloggerparameters:NoSummary;ForceNoAlign"
       ],
@@ -19,7 +19,7 @@
       "type": "process",
       "args": [
         "publish",
-        "${workspaceFolder}/StudentRegistrationPortal.Api.csproj",
+        "${workspaceFolder}/src/StudentRegistrationPortal.Api/StudentRegistrationPortal.Api.csproj",
         "-c",
         "Debug",
         "-r",

@@ -3,355 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Portal - Management & Approvals</title>
+    <title>Admin Portal - Course Approvals & Requests</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; }
-        .auth-card { max-width: 440px; width: 100%; margin: 60px auto; border-radius: 12px; background-color: #1e293b; border: 1px solid #334155; }
-        .admin-dashboard { max-width: 1150px; width: 100%; margin: 40px auto; border-radius: 12px; background-color: #1e293b; border: 1px solid #334155; }
-        .form-control, .form-select { background-color: #0f172a; border-color: #475569; color: #f8fafc; }
-        .form-control:focus, .form-select:focus { background-color: #0f172a; color: #fff; border-color: #3b82f6; box-shadow: none; }
-        .table { color: #f8fafc; }
-        .modal-content { background-color: #1e293b; border: 1px solid #334155; color: #f8fafc; }
-        .nav-pills .nav-link { color: #94a3b8; }
-        .nav-pills .nav-link.active { background-color: #ef4444; color: #fff; }
+        body { background-color: #f4f6f9; min-height: 100vh; display: flex; flex-direction: column; }
+        .dashboard-card { max-width: 1150px; width: 100%; margin: 40px auto; border-radius: 12px; }
+        .btn-admin { background-color: #dc2626; border-color: #dc2626; color: #fff; }
+        .btn-admin:hover { background-color: #b91c1c; border-color: #b91c1c; color: #fff; }
+        .btn-outline-admin { color: #dc2626; border-color: #dc2626; }
+        .btn-outline-admin:hover { background-color: #dc2626; color: #fff; }
+        .table-responsive { border-radius: 8px; }
     </style>
 </head>
 <body>
 
-<div class="container my-auto">
-    <div id="alertBox" class="alert d-none mx-auto mb-3" style="max-width: 600px;" role="alert"></div>
+<div class="container my-4">
+    <div id="alertBox" class="alert d-none mx-auto mb-3" style="max-width: 1150px;" role="alert"></div>
 
-    <!-- Admin Login Card -->
-    <div id="authSection" class="card shadow-lg auth-card p-4">
-        <div class="text-center mb-4">
-            <span class="badge bg-danger mb-2 px-3 py-2 text-uppercase fw-bold">Admin Portal</span>
-            <h4 class="fw-bold text-white mb-1">Administrative Access</h4>
-            <p class="text-secondary small mb-0">Restricted to users with Role ID: 1 (Admin)</p>
-        </div>
-
-        <form id="adminLoginForm">
-            <div class="mb-3">
-                <label for="adminEmail" class="form-label text-light">Email Address</label>
-                <input type="email" class="form-control" id="adminEmail" placeholder="admin@portal.edu" required>
-            </div>
-            <div class="mb-3">
-                <label for="adminPassword" class="form-label text-light">Password</label>
-                <input type="password" class="form-control" id="adminPassword" placeholder="••••••••" required>
-            </div>
-            <button type="submit" class="btn btn-danger w-100 py-2 fw-semibold">Sign In as Admin</button>
-        </form>
-    </div>
-
-    <!-- Admin Dashboard -->
-    <div id="dashboardSection" class="card shadow-lg admin-dashboard p-4 d-none">
-        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
+    <div id="dashboardSection" class="card shadow-sm dashboard-card p-4 border-0">
+        <!-- Top Navigation Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-3 gap-2">
             <div>
-                <span class="badge bg-danger text-uppercase me-2">Administrator</span>
-                <h4 class="mb-0 d-inline align-middle text-white fw-bold">Portal Dashboard</h4>
+                <span class="badge bg-danger text-uppercase me-1 px-2 py-1">Administrator</span>
+                <h4 class="mb-0 d-inline align-middle fw-bold">Welcome, <span id="adminProfileEmail" class="text-danger">Loading...</span></h4>
             </div>
-            <button id="logoutBtn" class="btn btn-outline-danger btn-sm">Log Out</button>
-        </div>
-
-        <!-- Admin Info Header -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-6">
-                <div class="p-3 rounded bg-dark border border-secondary">
-                    <p class="mb-1 text-secondary small">Authenticated Admin Email</p>
-                    <h5 id="adminProfileEmail" class="text-info fw-bold mb-0"></h5>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="p-3 rounded bg-dark border border-secondary">
-                    <p class="mb-1 text-secondary small">Assigned Roles</p>
-                    <div id="adminRolesBadges"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Navigation Tabs -->
-        <ul class="nav nav-pills mb-3" id="adminTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active fw-bold" id="enrollments-tab" data-bs-toggle="tab" data-bs-target="#enrollmentsPane" type="button" role="tab">
-                    Course Requests & Approvals <span id="pendingCountBadge" class="badge bg-warning text-dark ms-1">0</span>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="admin.html" class="btn btn-danger btn-sm active fw-semibold shadow-sm">
+                    Approvals & Requests <span id="pendingCountBadge" class="badge bg-warning text-dark ms-1">0</span>
+                </a>
+                <a href="admin-courses.html" class="btn btn-outline-secondary btn-sm fw-semibold">
+                    Course Management
+                </a>
+                <a href="admin-students.html" class="btn btn-outline-secondary btn-sm fw-semibold">
+                    Students
+                </a>
+                <button id="logoutBtn" class="btn btn-outline-danger btn-sm fw-semibold">
+                    Log Out
                 </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link fw-bold" id="courses-tab" data-bs-toggle="tab" data-bs-target="#coursesPane" type="button" role="tab">Courses Management</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link fw-bold" id="users-tab" data-bs-toggle="tab" data-bs-target="#usersPane" type="button" role="tab">System Users</button>
-            </li>
-        </ul>
-
-        <div class="tab-content">
-            <!-- 1. ENROLLMENTS & APPROVALS TAB -->
-            <div class="tab-pane fade show active" id="enrollmentsPane" role="tabpanel">
-                <div class="card bg-dark border-secondary">
-                    <div class="card-header border-secondary d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <span class="fw-semibold text-white">Pending & Registered Course Enrollments</span>
-                        <div class="d-flex gap-2">
-                            <select id="enrollmentStatusFilter" class="form-select form-select-sm" style="width: 160px;">
-                                <option value="">All Statuses</option>
-                                <option value="5" selected>Pending Only</option>
-                                <option value="1">Enrolled (Approved)</option>
-                                <option value="3">Dropped (Declined)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-dark table-hover mb-0 align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Student</th>
-                                        <th>Course</th>
-                                        <th>Credits</th>
-                                        <th>Instructor</th>
-                                        <th>Submitted</th>
-                                        <th>Status</th>
-                                        <th class="text-end pe-3" style="min-width: 160px;">Review Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="enrollmentsTableBody">
-                                    <tr><td colspan="8" class="text-center text-secondary py-3">Loading enrollments...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
             </div>
+        </div>
 
-            <!-- 2. COURSES MANAGEMENT TAB -->
-            <div class="tab-pane fade" id="coursesPane" role="tabpanel">
-                <div class="card bg-dark border-secondary">
-                    <div class="card-header border-secondary d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <span class="fw-semibold text-white">Course Catalog & Live Offerings</span>
-                        <div class="d-flex gap-2">
-                            <button id="addCourseBtn" class="btn btn-sm btn-success fw-bold">+ Add Course</button>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-dark table-hover mb-0 align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Code</th>
-                                        <th>Course Name</th>
-                                        <th>Credits</th>
-                                        <th>Level</th>
-                                        <th>Instructor</th>
-                                        <th>Status</th>
-                                        <th>Departments</th>
-                                        <th class="text-end pe-3">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="coursesTableBody">
-                                    <tr><td colspan="9" class="text-center text-secondary py-3">Loading courses...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. USERS TAB -->
-            <div class="tab-pane fade" id="usersPane" role="tabpanel">
-                <div class="card bg-dark border-secondary">
-                    <div class="card-header border-secondary d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <span class="fw-semibold text-white">System Users & Roles</span>
-                        <div class="d-flex gap-2">
-                            <div class="input-group input-group-sm" style="width: 220px;">
-                                <input type="number" id="searchUserIdInput" class="form-control" placeholder="Search by User ID...">
-                                <button class="btn btn-outline-info" id="searchUserBtn">Find</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-dark table-hover mb-0 align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>User ID</th>
-                                        <th>Email</th>
-                                        <th>Roles</th>
-                                        <th>Status</th>
-                                        <th class="text-end pe-3">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="usersTableBody">
-                                    <tr><td colspan="5" class="text-center text-secondary py-3">Loading users...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+        <!-- Admin Profile Summary Bar -->
+        <div class="card mb-4 bg-light border-0">
+            <div class="card-body py-3">
+                <div class="row g-2 small">
+                    <div class="col-md-3 col-6"><strong>User ID:</strong> <span id="adminProfileId">-</span></div>
+                    <div class="col-md-3 col-6"><strong>Email:</strong> <span id="adminProfileEmailText">-</span></div>
+                    <div class="col-md-3 col-6"><strong>Roles:</strong> <span id="adminRolesBadges"><span class="badge bg-danger">Admin</span></span></div>
+                    <div class="col-md-3 col-6"><strong>Status:</strong> <span id="adminStatusBadge" class="badge bg-success">Active</span></div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- ================= COURSE MODAL (ADD / EDIT) ================= -->
-<div class="modal fade" id="courseModal" tabindex="-1" aria-labelledby="courseModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title fw-bold" id="courseModalTitle">Add Course</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <!-- Course Requests & Approvals Section -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark">Course Enrollment Requests & Review</h5>
+                    <small class="text-muted">Review, approve, or decline student course registrations</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="refreshBtn" class="btn btn-outline-secondary btn-sm" title="Refresh Requests">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
             </div>
-            <form id="courseForm">
-                <div class="modal-body">
-                    <input type="hidden" id="courseModalId">
-                    
-                    <!-- Section 1: Course Info -->
-                    <h6 class="text-info fw-bold mb-3 border-bottom border-secondary pb-1">1. General Course Details</h6>
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-4">
-                            <label for="courseCode" class="form-label">Course Code *</label>
-                            <input type="text" class="form-control" id="courseCode" placeholder="e.g. CS101" required>
-                        </div>
-                        <div class="col-md-8">
-                            <label for="courseName" class="form-label">Course Name *</label>
-                            <input type="text" class="form-control" id="courseName" placeholder="e.g. Introduction to Computer Science" required>
-                        </div>
-                    </div>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-4">
-                            <label for="creditHours" class="form-label">Credit Hours</label>
-                            <input type="number" class="form-control" id="creditHours" value="3" min="1" max="10" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="difficultyLevel" class="form-label">Difficulty Level</label>
-                            <select class="form-select" id="difficultyLevel">
-                                <option value="Beginner">Beginner</option>
-                                <option value="Intermediate">Intermediate</option>
-                                <option value="Advanced">Advanced</option>
-                                <option value="Undergraduate" selected>Undergraduate</option>
-                                <option value="Graduate">Graduate</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="courseStatusId" class="form-label">Status</label>
-                            <select class="form-select" id="courseStatusId">
-                                <option value="">Loading statuses...</option>
-                            </select>
+            <!-- Organized Filter & Action Toolbar -->
+            <div class="card-body bg-light border-bottom p-3">
+                <div class="row g-3 align-items-center">
+                    <div class="col-lg-6 col-md-12">
+                        <div class="btn-group btn-group-sm w-100" role="group" aria-label="Status Filters">
+                            <button type="button" class="btn btn-outline-secondary filter-btn active" data-status="">All Statuses</button>
+                            <button type="button" class="btn btn-outline-warning filter-btn text-dark" data-status="5">Pending Only</button>
+                            <button type="button" class="btn btn-outline-success filter-btn" data-status="1">Enrolled (Approved)</button>
+                            <button type="button" class="btn btn-outline-danger filter-btn" data-status="3">Dropped (Declined)</button>
                         </div>
                     </div>
-
-                    <div class="mb-4">
-                        <label for="departmentId" class="form-label">Department</label>
-                        <select class="form-select" id="departmentId">
-                            <option value="">Loading departments...</option>
-                        </select>
-                    </div>
-
-                    <!-- Section 2: Offering & Schedule -->
-                    <h6 class="text-info fw-bold mb-3 border-bottom border-secondary pb-1">2. Course Offering & Schedule (Live Data)</h6>
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-4">
-                            <label for="semesterId" class="form-label">Semester</label>
-                            <select class="form-select" id="semesterId">
-                                <option value="">Loading semesters...</option>
-                            </select>
+                    <div class="col-lg-6 col-md-12">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search by student name, number, email, or course code...">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">Clear</button>
                         </div>
-                        <div class="col-md-4">
-                            <label for="sectionNumber" class="form-label">Section Number</label>
-                            <input type="text" class="form-control" id="sectionNumber" value="SEC-01">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="offCapacity" class="form-label">Class Capacity</label>
-                            <input type="number" class="form-control" id="offCapacity" value="30" min="1">
-                        </div>
-                    </div>
-
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-4">
-                            <label for="instructorId" class="form-label">Assigned Instructor</label>
-                            <select class="form-select" id="instructorId">
-                                <option value="">Loading instructors...</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="roomId" class="form-label">Classroom / Hall</label>
-                            <select class="form-select" id="roomId">
-                                <option value="">Loading classrooms...</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="dayOfWeek" class="form-label">Day of Week</label>
-                            <select class="form-select" id="dayOfWeek">
-                                <option value="1" selected>Monday</option>
-                                <option value="2">Tuesday</option>
-                                <option value="3">Wednesday</option>
-                                <option value="4">Thursday</option>
-                                <option value="5">Friday</option>
-                                <option value="6">Saturday</option>
-                                <option value="7">Sunday</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row g-2 mb-2">
-                        <div class="col-md-6">
-                            <label for="startTime" class="form-label">Start Time</label>
-                            <input type="time" class="form-control" id="startTime" value="09:00">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="endTime" class="form-label">End Time</label>
-                            <input type="time" class="form-control" id="endTime" value="10:30">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger fw-bold" id="saveCourseBtn">Save Course & Offerings</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- ================= USER DETAILS MODAL ================= -->
-<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalTitle" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title fw-bold" id="userModalTitle">User Details</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="text-secondary small">User ID</label>
-                    <h5 id="modalUserId" class="fw-bold text-info mb-0"></h5>
-                </div>
-                <div class="mb-3">
-                    <label class="text-secondary small">Email Address</label>
-                    <h6 id="modalUserEmail" class="fw-bold text-white mb-0"></h6>
-                </div>
-                <div class="mb-3">
-                    <label class="text-secondary small">Account Status</label>
-                    <div id="modalUserStatus"></div>
-                </div>
-                <div class="mb-3">
-                    <label class="text-secondary small">Assigned System Roles</label>
-                    <div id="modalUserRoles" class="mt-1"></div>
-                </div>
-                <div class="row g-2">
-                    <div class="col-6">
-                        <label class="text-secondary small">Created At</label>
-                        <p id="modalUserCreatedAt" class="small text-white mb-0"></p>
-                    </div>
-                    <div class="col-6">
-                        <label class="text-secondary small">Last Updated</label>
-                        <p id="modalUserUpdatedAt" class="small text-white mb-0"></p>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-secondary">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
+            <!-- Enrollments Table -->
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 70px;">ID</th>
+                                <th>Student</th>
+                                <th>Course</th>
+                                <th>Credits</th>
+                                <th>Instructor</th>
+                                <th>Submitted</th>
+                                <th>Status</th>
+                                <th class="text-end pe-3" style="min-width: 180px;">Review Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="enrollmentsTableBody">
+                            <tr><td colspan="8" class="text-center text-muted py-4">Loading enrollment requests...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white py-2 text-muted small d-flex justify-content-between align-items-center">
+                <span id="recordsCountText">Showing 0 records</span>
+                <span>Role Requirement: <strong>Admin (RoleId: 1)</strong></span>
             </div>
         </div>
     </div>
@@ -359,9 +123,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    const API_BASE = '/api/admin';
     const API_VERSION = '1.0';
-    let courseModalInstance = null;
-    let userModalInstance = null;
+    let currentStatusFilter = '';
+    let allLoadedEnrollments = [];
 
     async function apiRequest(url, options = {}) {
         options.headers = options.headers || {};
@@ -376,6 +141,12 @@
         const response = await fetch(url, options);
         const data = await response.json().catch(() => null);
 
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('admin_jwt_token');
+            window.location.replace('adminlogin.html');
+            return null;
+        }
+
         if (!response.ok) {
             const errorMsg = data?.message || data?.detail || `Error (${response.status}): ${response.statusText}`;
             throw new Error(errorMsg);
@@ -385,173 +156,168 @@
 
     function showAlert(message, type = 'danger') {
         const alertBox = document.getElementById('alertBox');
-        alertBox.className = `alert alert-${type} mx-auto mb-3`;
-        alertBox.textContent = message;
+        if (!alertBox) return;
+        alertBox.className = `alert alert-${type} mx-auto mb-3 shadow-sm`;
+        alertBox.innerHTML = message;
         alertBox.classList.remove('d-none');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function hideAlert() {
-        document.getElementById('alertBox').classList.add('d-none');
+        const alertBox = document.getElementById('alertBox');
+        if (alertBox) alertBox.classList.add('d-none');
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-        courseModalInstance = new bootstrap.Modal(document.getElementById('courseModal'));
-        userModalInstance = new bootstrap.Modal(document.getElementById('userModal'));
-        loadLookups();
+    window.addEventListener('DOMContentLoaded', async () => {
         const token = localStorage.getItem('admin_jwt_token');
-        if (token) {
-            loadDashboard();
+        if (!token) {
+            window.location.replace('adminlogin.html');
+            return;
         }
+
+        await loadProfile();
+        await loadEnrollments();
     });
 
-    async function loadLookups() {
+    async function loadProfile() {
         try {
-            const lookups = await apiRequest('/api/admin/lookups', { method: 'GET' });
-            if (lookups) {
-                if (lookups.departments?.length) populateSelect('departmentId', lookups.departments);
-                if (lookups.semesters?.length) populateSelect('semesterId', lookups.semesters);
-                if (lookups.instructors?.length) populateSelect('instructorId', lookups.instructors);
-                if (lookups.rooms?.length) populateSelect('roomId', lookups.rooms);
-                if (lookups.courseStatuses?.length) populateSelect('courseStatusId', lookups.courseStatuses);
-            }
-        } catch (e) {
-            console.error('Failed to load database lookups:', e);
-        }
-    }
+            const admin = await apiRequest(`${API_BASE}/me`, { method: 'GET' });
+            if (!admin) return;
 
-    function populateSelect(elemId, items) {
-        const sel = document.getElementById(elemId);
-        if (!sel || !items) return;
-        sel.innerHTML = '';
-        items.forEach(it => {
-            const opt = document.createElement('option');
-            opt.value = it.id;
-            opt.textContent = it.name;
-            sel.appendChild(opt);
-        });
-    }
-
-    // 1. Admin Login
-    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        hideAlert();
-
-        const email = document.getElementById('adminEmail').value.trim();
-        const password = document.getElementById('adminPassword').value;
-
-        try {
-            const result = await apiRequest('/api/admin/login', {
-                method: 'POST',
-                body: JSON.stringify({ email, password })
+            document.getElementById('adminProfileEmail').textContent = admin.email || 'Admin';
+            document.getElementById('adminProfileEmailText').textContent = admin.email || '-';
+            document.getElementById('adminProfileId').textContent = admin.userId ? `#${admin.userId}` : '-';
+            
+            const badgesContainer = document.getElementById('adminRolesBadges');
+            badgesContainer.innerHTML = '';
+            (admin.roles || ['Admin']).forEach(r => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-danger me-1';
+                badge.textContent = r;
+                badgesContainer.appendChild(badge);
             });
 
-            localStorage.setItem('admin_jwt_token', result.token);
-            showAlert('Admin authenticated successfully!', 'success');
-            loadDashboard();
-        } catch (err) {
-            showAlert(err.message, 'danger');
-        }
-    });
-
-    async function loadDashboard() {
-        try {
-            const profile = await apiRequest('/api/admin/me', { method: 'GET' });
-            displayAdminProfile(profile);
-            loadLookups();
-            loadEnrollments();
-            loadCourses();
-            loadUsers();
+            document.getElementById('adminStatusBadge').textContent = admin.isActive ? 'Active' : 'Inactive';
+            document.getElementById('adminStatusBadge').className = admin.isActive ? 'badge bg-success' : 'badge bg-secondary';
         } catch (err) {
             logout();
         }
     }
 
-    function displayAdminProfile(admin) {
-        document.getElementById('authSection').classList.add('d-none');
-        document.getElementById('dashboardSection').classList.remove('d-none');
-        document.getElementById('adminProfileEmail').textContent = admin.email;
-
-        const badgesContainer = document.getElementById('adminRolesBadges');
-        badgesContainer.innerHTML = '';
-        (admin.roles || ['Admin']).forEach(r => {
-            const badge = document.createElement('span');
-            badge.className = 'badge bg-danger me-1';
-            badge.textContent = r;
-            badgesContainer.appendChild(badge);
-        });
-    }
-
-    // 2. Load Course Enrollments
     async function loadEnrollments() {
         const tbody = document.getElementById('enrollmentsTableBody');
-        const filterStatus = document.getElementById('enrollmentStatusFilter').value;
-        const queryParam = filterStatus ? `?statusId=${filterStatus}` : '';
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Loading enrollment requests...</td></tr>`;
 
         try {
-            const enrollments = await apiRequest(`/api/admin/enrollments${queryParam}`, { method: 'GET' });
-            tbody.innerHTML = '';
+            const allItems = await apiRequest(`${API_BASE}/enrollments`, { method: 'GET' });
+            if (!allItems) return;
+            allLoadedEnrollments = allItems;
 
-            const allItems = await apiRequest('/api/admin/enrollments', { method: 'GET' }).catch(() => []);
-            const pendingCount = (allItems || []).filter(e => e.statusName.toLowerCase() === 'pending' || e.enrollmentStatusId === 5).length;
+            const pendingCount = (allLoadedEnrollments || []).filter(e => 
+                (e.statusName && e.statusName.toLowerCase() === 'pending') || e.enrollmentStatusId === 5
+            ).length;
             document.getElementById('pendingCountBadge').textContent = pendingCount;
 
-            if (!enrollments || enrollments.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-secondary py-3">No enrollments matching the selected filter.</td></tr>`;
-                return;
-            }
-
-            enrollments.forEach(e => {
-                const tr = document.createElement('tr');
-                const isPending = e.statusName.toLowerCase() === 'pending' || e.enrollmentStatusId === 5;
-                const isApproved = e.statusName.toLowerCase() === 'enrolled' || e.enrollmentStatusId === 1;
-
-                let statusBadge = 'bg-secondary';
-                if (isPending) statusBadge = 'bg-warning text-dark';
-                else if (isApproved) statusBadge = 'bg-success';
-                else statusBadge = 'bg-danger';
-
-                const dateStr = new Date(e.registrationDate).toLocaleDateString();
-
-                let actionButtons = '';
-                if (isPending) {
-                    actionButtons = `
-                        <button class="btn btn-sm btn-success me-1" onclick="approveEnrollment(${e.enrollmentId}, '${e.courseCode}', '${e.studentName.replace(/'/g, "\\'")}')">Approve</button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="declineEnrollment(${e.enrollmentId}, '${e.courseCode}', '${e.studentName.replace(/'/g, "\\'")}')">Decline</button>
-                    `;
-                } else if (isApproved) {
-                    actionButtons = `<button class="btn btn-sm btn-outline-danger" onclick="declineEnrollment(${e.enrollmentId}, '${e.courseCode}', '${e.studentName.replace(/'/g, "\\'")}')">Revoke / Decline</button>`;
-                } else {
-                    actionButtons = `<button class="btn btn-sm btn-outline-success" onclick="approveEnrollment(${e.enrollmentId}, '${e.courseCode}', '${e.studentName.replace(/'/g, "\\'")}')">Re-Approve</button>`;
-                }
-
-                tr.innerHTML = `
-                    <td>#${e.enrollmentId}</td>
-                    <td>
-                        <div class="fw-bold">${e.studentName}</div>
-                        <small class="text-secondary">${e.studentNumber} • ${e.studentEmail}</small>
-                    </td>
-                    <td>
-                        <span class="badge bg-primary me-1">${e.courseCode}</span>
-                        <span>${e.courseName}</span>
-                    </td>
-                    <td>${e.creditHours} hrs</td>
-                    <td class="text-secondary small">${e.instructorName || 'Faculty Assigned'}</td>
-                    <td class="text-secondary small">${dateStr}</td>
-                    <td><span class="badge ${statusBadge}">${e.statusName}</span></td>
-                    <td class="text-end pe-3">${actionButtons}</td>
-                `;
-                tbody.appendChild(tr);
-            });
+            renderTable();
         } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center py-2">${err.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center py-3">${err.message}</td></tr>`;
         }
     }
 
+    function renderTable() {
+        const tbody = document.getElementById('enrollmentsTableBody');
+        const searchTerm = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+
+        let filtered = allLoadedEnrollments;
+
+        if (currentStatusFilter) {
+            const statusInt = parseInt(currentStatusFilter, 10);
+            filtered = filtered.filter(e => e.enrollmentStatusId === statusInt);
+        }
+
+        if (searchTerm) {
+            filtered = filtered.filter(e => 
+                (e.studentName && e.studentName.toLowerCase().includes(searchTerm)) ||
+                (e.studentNumber && e.studentNumber.toLowerCase().includes(searchTerm)) ||
+                (e.studentEmail && e.studentEmail.toLowerCase().includes(searchTerm)) ||
+                (e.courseCode && e.courseCode.toLowerCase().includes(searchTerm)) ||
+                (e.courseName && e.courseName.toLowerCase().includes(searchTerm)) ||
+                (e.instructorName && e.instructorName.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        document.getElementById('recordsCountText').textContent = `Showing ${filtered.length} of ${allLoadedEnrollments.length} records`;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No enrollment records matching the selected filter criteria.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        filtered.forEach(e => {
+            const tr = document.createElement('tr');
+            const isPending = (e.statusName && e.statusName.toLowerCase() === 'pending') || e.enrollmentStatusId === 5;
+            const isApproved = (e.statusName && e.statusName.toLowerCase() === 'enrolled') || e.enrollmentStatusId === 1;
+
+            let statusBadge = 'bg-secondary';
+            if (isPending) statusBadge = 'bg-warning text-dark';
+            else if (isApproved) statusBadge = 'bg-success';
+            else statusBadge = 'bg-danger';
+
+            const dateStr = e.registrationDate ? new Date(e.registrationDate).toLocaleDateString() : '-';
+
+            let actionButtons = '';
+            if (isPending) {
+                actionButtons = `
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-success fw-semibold" onclick="approveEnrollment(${e.enrollmentId}, '${e.courseCode}', '${(e.studentName || '').replace(/'/g, "\\'")}')">
+                            Approve
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="declineEnrollment(${e.enrollmentId}, '${e.courseCode}', '${(e.studentName || '').replace(/'/g, "\\'")}')">
+                            Decline
+                        </button>
+                    </div>
+                `;
+            } else if (isApproved) {
+                actionButtons = `
+                    <button class="btn btn-sm btn-outline-danger" onclick="declineEnrollment(${e.enrollmentId}, '${e.courseCode}', '${(e.studentName || '').replace(/'/g, "\\'")}')">
+                        Revoke / Decline
+                    </button>
+                `;
+            } else {
+                actionButtons = `
+                    <button class="btn btn-sm btn-outline-success" onclick="approveEnrollment(${e.enrollmentId}, '${e.courseCode}', '${(e.studentName || '').replace(/'/g, "\\'")}')">
+                        Re-Approve
+                    </button>
+                `;
+            }
+
+            tr.innerHTML = `
+                <td><span class="text-muted fw-bold">#${e.enrollmentId}</span></td>
+                <td>
+                    <div class="fw-bold text-dark">${e.studentName || 'Student'}</div>
+                    <small class="text-muted">${e.studentNumber || '-'} • ${e.studentEmail || '-'}</small>
+                </td>
+                <td>
+                    <span class="badge bg-primary me-1">${e.courseCode || '-'}</span>
+                    <span class="fw-semibold">${e.courseName || '-'}</span>
+                </td>
+                <td><span class="badge bg-light text-dark border">${e.creditHours || 0} hrs</span></td>
+                <td class="text-muted small">${e.instructorName || 'Faculty Assigned'}</td>
+                <td class="text-muted small">${dateStr}</td>
+                <td><span class="badge ${statusBadge}">${e.statusName || 'Unknown'}</span></td>
+                <td class="text-end pe-3">${actionButtons}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
     window.approveEnrollment = async function(id, courseCode, studentName) {
+        hideAlert();
         try {
-            await apiRequest(`/api/admin/enrollments/${id}/approve`, { method: 'PUT' });
+            await apiRequest(`${API_BASE}/enrollments/${id}/approve`, { method: 'PUT' });
             showAlert(`Enrollment #${id} for ${studentName} (${courseCode}) approved successfully!`, 'success');
-            loadEnrollments();
+            await loadEnrollments();
         } catch (err) {
             showAlert(`Failed to approve enrollment: ${err.message}`, 'danger');
         }
@@ -559,231 +325,41 @@
 
     window.declineEnrollment = async function(id, courseCode, studentName) {
         if (!confirm(`Are you sure you want to decline/drop enrollment #${id} for ${studentName} (${courseCode})?`)) return;
+        hideAlert();
 
         try {
-            await apiRequest(`/api/admin/enrollments/${id}/decline`, { method: 'PUT' });
+            await apiRequest(`${API_BASE}/enrollments/${id}/decline`, { method: 'PUT' });
             showAlert(`Enrollment #${id} for ${studentName} (${courseCode}) declined.`, 'warning');
-            loadEnrollments();
+            await loadEnrollments();
         } catch (err) {
             showAlert(`Failed to decline enrollment: ${err.message}`, 'danger');
         }
     };
 
-    document.getElementById('enrollmentStatusFilter')?.addEventListener('change', loadEnrollments);
-    document.getElementById('refreshEnrollmentsBtn')?.addEventListener('click', loadEnrollments);
-
-    // 3. Load Courses
-    async function loadCourses() {
-        const tbody = document.getElementById('coursesTableBody');
-        try {
-            const courses = await apiRequest('/api/courses', { method: 'GET' });
-            tbody.innerHTML = '';
-            if (!courses || courses.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-secondary py-3">No courses found.</td></tr>`;
-                return;
-            }
-
-            courses.forEach(c => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${c.courseId}</td>
-                    <td><span class="badge bg-primary">${c.courseCode}</span></td>
-                    <td><strong>${c.courseName}</strong></td>
-                    <td>${c.creditHours} hrs</td>
-                    <td>${c.difficultyLevel}</td>
-                    <td class="small text-info">${c.instructorName || 'Faculty Assigned'}</td>
-                    <td><span class="badge bg-${c.courseStatusId === 1 ? 'success' : 'secondary'}">${c.statusName || 'Active'}</span></td>
-                    <td class="small text-secondary">${c.assignedDepartments || 'N/A'}</td>
-                    <td class="text-end pe-3">
-                        <button class="btn btn-sm btn-outline-warning me-1" onclick="openEditCourse(${c.courseId}, '${c.courseCode}', '${c.courseName.replace(/'/g, "\\'")}', ${c.creditHours}, '${c.difficultyLevel}', ${c.courseStatusId})">Edit</button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteCourse(${c.courseId}, '${c.courseCode}')">Delete</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-danger text-center py-2">${err.message}</td></tr>`;
-        }
-    }
-
-    // 4. Add & Edit Course Handlers
-    document.getElementById('addCourseBtn')?.addEventListener('click', () => {
-        document.getElementById('courseModalTitle').textContent = 'Add Course & Configure Relational Offerings';
-        document.getElementById('courseModalId').value = '';
-        document.getElementById('courseCode').value = '';
-        document.getElementById('courseCode').disabled = false;
-        document.getElementById('courseName').value = '';
-        document.getElementById('creditHours').value = '3';
-        document.getElementById('difficultyLevel').value = 'Undergraduate';
-        document.getElementById('sectionNumber').value = 'SEC-01';
-        document.getElementById('offCapacity').value = '30';
-        document.getElementById('dayOfWeek').value = '1';
-        document.getElementById('startTime').value = '09:00';
-        document.getElementById('endTime').value = '10:30';
-        courseModalInstance.show();
+    // Filter Buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            currentStatusFilter = e.currentTarget.getAttribute('data-status');
+            renderTable();
+        });
     });
 
-    window.openEditCourse = function(id, code, name, credits, level, statusId) {
-        document.getElementById('courseModalTitle').textContent = `Edit Course: ${code}`;
-        document.getElementById('courseModalId').value = id;
-        document.getElementById('courseCode').value = code;
-        document.getElementById('courseCode').disabled = true;
-        document.getElementById('courseName').value = name;
-        document.getElementById('creditHours').value = credits;
-        document.getElementById('difficultyLevel').value = level;
-        if (document.getElementById('courseStatusId')) document.getElementById('courseStatusId').value = statusId;
-        courseModalInstance.show();
-    };
-
-    document.getElementById('courseForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('courseModalId').value;
-        const deptId = parseInt(document.getElementById('departmentId').value, 10);
-        const deptIds = isNaN(deptId) ? [] : [deptId];
-
-        const semId = parseInt(document.getElementById('semesterId').value, 10);
-        const instId = parseInt(document.getElementById('instructorId').value, 10);
-        const rId = parseInt(document.getElementById('roomId').value, 10);
-        const dow = parseInt(document.getElementById('dayOfWeek').value, 10) || 1;
-        const sTime = document.getElementById('startTime').value + ':00';
-        const eTime = document.getElementById('endTime').value + ':00';
-        const statusId = parseInt(document.getElementById('courseStatusId').value, 10) || 1;
-
-        const offerings = [{
-            semesterId: isNaN(semId) ? 1 : semId,
-            offeringStatusId: 1,
-            sectionNumber: document.getElementById('sectionNumber').value || 'SEC-01',
-            capacity: parseInt(document.getElementById('offCapacity').value, 10) || 30,
-            instructorIds: isNaN(instId) ? [] : [instId],
-            schedules: [{
-                roomId: isNaN(rId) ? 1 : rId,
-                dayOfWeek: dow,
-                startTime: sTime,
-                endTime: eTime
-            }]
-        }];
-
-        try {
-            if (id) {
-                const payload = {
-                    courseName: document.getElementById('courseName').value.trim(),
-                    creditHours: parseInt(document.getElementById('creditHours').value, 10),
-                    difficultyLevel: document.getElementById('difficultyLevel').value,
-                    courseStatusId: statusId,
-                    departmentIds: deptIds,
-                    offerings: offerings
-                };
-                await apiRequest(`/api/courses/${id}`, {
-                    method: 'PUT',
-                    body: JSON.stringify(payload)
-                });
-                showAlert('Course and offerings updated successfully!', 'success');
-            } else {
-                const payload = {
-                    courseCode: document.getElementById('courseCode').value.trim(),
-                    courseName: document.getElementById('courseName').value.trim(),
-                    creditHours: parseInt(document.getElementById('creditHours').value, 10),
-                    difficultyLevel: document.getElementById('difficultyLevel').value,
-                    courseStatusId: statusId,
-                    departmentIds: deptIds,
-                    offerings: offerings
-                };
-                await apiRequest('/api/courses', {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-                showAlert('Course, offerings, and schedules added successfully!', 'success');
-            }
-
-            courseModalInstance.hide();
-            loadCourses();
-        } catch (err) {
-            showAlert(`Failed: ${err.message}`, 'danger');
-        }
+    document.getElementById('searchInput')?.addEventListener('input', renderTable);
+    document.getElementById('clearSearchBtn')?.addEventListener('click', () => {
+        document.getElementById('searchInput').value = '';
+        renderTable();
     });
 
-    window.deleteCourse = async function(id, code) {
-        if (!confirm(`Are you sure you want to delete course ${code} (ID: ${id}) and all associated offerings/schedules?`)) return;
-
-        try {
-            await apiRequest(`/api/courses/${id}`, { method: 'DELETE' });
-            showAlert(`Course ${code} and associated offerings deleted successfully.`, 'success');
-            loadCourses();
-        } catch (err) {
-            showAlert(`Failed to delete course: ${err.message}`, 'danger');
-        }
-    };
-
-    // 5. Load Users & Get User By ID
-    async function loadUsers() {
-        const tbody = document.getElementById('usersTableBody');
-        try {
-            const users = await apiRequest('/api/admin/users', { method: 'GET' });
-            tbody.innerHTML = '';
-            users.forEach(u => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${u.userId}</td>
-                    <td>${u.email}</td>
-                    <td>${(u.roles || []).map(r => `<span class="badge bg-secondary me-1">${r}</span>`).join('') || '<span class="text-muted">None</span>'}</td>
-                    <td>${u.isActive ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>'}</td>
-                    <td class="text-end pe-3">
-                        <button class="btn btn-sm btn-outline-info" onclick="viewUserDetails(${u.userId})">View Details</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-2">${err.message}</td></tr>`;
-        }
-    }
-
-    window.viewUserDetails = async function(userId) {
-        try {
-            const user = await apiRequest(`/api/admin/users/${userId}`, { method: 'GET' });
-            document.getElementById('modalUserId').textContent = `#${user.userId}`;
-            document.getElementById('modalUserEmail').textContent = user.email;
-            document.getElementById('modalUserStatus').innerHTML = user.isActive 
-                ? '<span class="badge bg-success">Active Account</span>' 
-                : '<span class="badge bg-danger">Inactive Account</span>';
-
-            const rolesDiv = document.getElementById('modalUserRoles');
-            rolesDiv.innerHTML = '';
-            (user.roles || []).forEach(r => {
-                const b = document.createElement('span');
-                b.className = 'badge bg-primary me-1';
-                b.textContent = r;
-                rolesDiv.appendChild(b);
-            });
-
-            document.getElementById('modalUserCreatedAt').textContent = new Date(user.createdAt).toLocaleString();
-            document.getElementById('modalUserUpdatedAt').textContent = new Date(user.updatedAt).toLocaleString();
-
-            userModalInstance.show();
-        } catch (err) {
-            showAlert(`Failed to fetch user ID ${userId}: ${err.message}`, 'danger');
-        }
-    };
-
-    document.getElementById('searchUserBtn')?.addEventListener('click', () => {
-        const idVal = document.getElementById('searchUserIdInput')?.value?.trim();
-        if (idVal) {
-            viewUserDetails(parseInt(idVal, 10));
-        } else {
-            loadUsers();
-        }
-    });
+    document.getElementById('refreshBtn')?.addEventListener('click', loadEnrollments);
 
     function logout() {
         localStorage.removeItem('admin_jwt_token');
-        document.getElementById('dashboardSection')?.classList.add('d-none');
-        document.getElementById('authSection')?.classList.remove('d-none');
-        hideAlert();
+        window.location.replace('adminlogin.html');
     }
 
     document.getElementById('logoutBtn')?.addEventListener('click', logout);
-    document.getElementById('refreshCoursesBtn')?.addEventListener('click', loadCourses);
-    document.getElementById('refreshUsersBtn')?.addEventListener('click', loadUsers);
 </script>
 
 </body>

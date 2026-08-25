@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Portal - Sign In</title>
+    <title>Admin Portal - Sign In</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #f4f6f9; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
         .auth-card { max-width: 440px; width: 100%; border-radius: 12px; }
+        .btn-admin { background-color: #dc2626; border-color: #dc2626; color: #fff; }
+        .btn-admin:hover { background-color: #b91c1c; border-color: #b91c1c; color: #fff; }
     </style>
 </head>
 <body>
@@ -15,34 +17,35 @@
 <div class="container p-3">
     <div id="alertBox" class="alert d-none mx-auto mb-3" style="max-width: 440px;" role="alert"></div>
 
-    <div class="card shadow-sm auth-card p-4 mx-auto bg-white">
+    <div class="card shadow-sm auth-card p-4 mx-auto bg-white border-0">
         <div class="text-center mb-4">
-            <h3 class="fw-bold text-dark mb-1">Student Portal</h3>
-            <p class="text-muted small mb-0">Sign in with your student credentials</p>
+            <span class="badge bg-danger mb-2 px-3 py-2 text-uppercase fw-bold">Admin Portal</span>
+            <h3 class="fw-bold text-dark mb-1">Administrative Access</h3>
+            <p class="text-muted small mb-0">Sign in with administrator credentials (Role ID: 1)</p>
         </div>
 
-        <form id="loginForm">
+        <form id="adminLoginForm">
             <div class="mb-3">
-                <label for="loginEmail" class="form-label fw-semibold small">Email Address</label>
-                <input type="email" class="form-control" id="loginEmail" placeholder="student@example.edu" required autofocus>
+                <label for="adminEmail" class="form-label fw-semibold small">Email Address</label>
+                <input type="email" class="form-control" id="adminEmail" placeholder="admin@portal.edu" required autofocus>
             </div>
             <div class="mb-4">
-                <label for="loginPassword" class="form-label fw-semibold small">Password</label>
-                <input type="password" class="form-control" id="loginPassword" placeholder="••••••••" required>
+                <label for="adminPassword" class="form-label fw-semibold small">Password</label>
+                <input type="password" class="form-control" id="adminPassword" placeholder="••••••••" required>
             </div>
-            <button type="submit" id="signInBtn" class="btn btn-primary w-100 py-2 fw-semibold">
-                Sign In
+            <button type="submit" id="signInBtn" class="btn btn-admin w-100 py-2 fw-semibold shadow-sm">
+                Sign In as Admin
             </button>
         </form>
 
         <div class="text-center mt-3 pt-3 border-top">
-            <a href="adminlogin.html" class="text-decoration-none small text-muted">Switch to Admin Portal &rarr;</a>
+            <a href="login.html" class="text-decoration-none small text-muted">Switch to Student Portal &rarr;</a>
         </div>
     </div>
 </div>
 
 <script>
-    const API_BASE = '/api/students';
+    const API_BASE = '/api/admin';
     const API_VERSION = '1.0';
 
     function showAlert(message, type = 'danger') {
@@ -59,22 +62,21 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        // Redirect if already logged in
-        if (localStorage.getItem('jwt_token')) {
-            window.location.replace('index.html');
+        if (localStorage.getItem('admin_jwt_token')) {
+            window.location.replace('admin.html');
         }
     });
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         hideAlert();
 
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
+        const email = document.getElementById('adminEmail').value.trim();
+        const password = document.getElementById('adminPassword').value;
         const signInBtn = document.getElementById('signInBtn');
 
         signInBtn.disabled = true;
-        signInBtn.textContent = 'Signing in...';
+        signInBtn.textContent = 'Authenticating...';
 
         try {
             const response = await fetch(`${API_BASE}/login`, {
@@ -93,20 +95,19 @@
                 throw new Error(errorMsg);
             }
 
-            localStorage.setItem('jwt_token', data.token);
-            showAlert('Login successful! Redirecting...', 'success');
+            localStorage.setItem('admin_jwt_token', data.token);
+            showAlert('Admin authenticated! Redirecting...', 'success');
             setTimeout(() => {
-                window.location.replace('index.html');
-            }, 400);
+                window.location.replace('admin.html');
+            }, 300);
         } catch (err) {
-            showAlert(err.message || 'Login failed. Please check your credentials.', 'danger');
+            showAlert(err.message || 'Login failed. Please verify admin credentials.', 'danger');
         } finally {
             signInBtn.disabled = false;
-            signInBtn.textContent = 'Sign In';
+            signInBtn.textContent = 'Sign In as Admin';
         }
     });
 </script>
 
 </body>
 </html>
-
