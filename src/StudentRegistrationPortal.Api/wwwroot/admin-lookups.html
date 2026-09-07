@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Lookups Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background-color: #f4f6f9; min-height: 100vh; display: flex; flex-direction: column; }
+        .dashboard-card { max-width: 1150px; width: 100%; margin: 40px auto; border-radius: 12px; }
+        .btn-admin { background-color: #dc2626; border-color: #dc2626; color: #fff; }
+        .btn-admin:hover { background-color: #b91c1c; border-color: #b91c1c; color: #fff; }
+        .btn-outline-admin { color: #dc2626; border-color: #dc2626; }
+        .btn-outline-admin:hover { background-color: #dc2626; color: #fff; }
+        .nav-pills .nav-link.active { background-color: #dc2626; }
+        .table-responsive { border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="container my-4">
+    <div id="alertBox" class="alert d-none mx-auto mb-3" style="max-width: 1150px;" role="alert"></div>
+
+    <div id="dashboardSection" class="card shadow-sm dashboard-card p-4 border-0">
+        <!-- Top Navigation Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-3 gap-2">
+            <div>
+                <span class="badge bg-danger text-uppercase me-1 px-2 py-1">Administrator</span>
+                <h4 class="mb-0 d-inline align-middle fw-bold">Welcome, <span id="adminProfileEmail" class="text-danger">Loading...</span></h4>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="admin.html" class="btn btn-outline-secondary btn-sm fw-semibold">
+                    Approvals & Requests
+                </a>
+                <a href="admin-courses.html" class="btn btn-outline-secondary btn-sm fw-semibold">
+                    Course Management
+                </a>
+                <a href="admin-students.html" class="btn btn-outline-secondary btn-sm fw-semibold">
+                    Students
+                </a>
+                <a href="admin-lookups.html" class="btn btn-danger btn-sm active fw-semibold shadow-sm">
+                    Lookups Management
+                </a>
+                <button id="logoutBtn" class="btn btn-outline-danger btn-sm fw-semibold">
+                    Log Out
+                </button>
+            </div>
+        </div>
+
+        <!-- Admin Profile Summary Bar -->
+        <div class="card mb-4 bg-light border-0">
+            <div class="card-body py-3">
+                <div class="row g-2 small">
+                    <div class="col-md-3 col-6"><strong>User ID:</strong> <span id="adminProfileId">-</span></div>
+                    <div class="col-md-3 col-6"><strong>Email:</strong> <span id="adminProfileEmailText">-</span></div>
+                    <div class="col-md-3 col-6"><strong>Roles:</strong> <span id="adminRolesBadges"><span class="badge bg-danger">Admin</span></span></div>
+                    <div class="col-md-3 col-6"><strong>Status:</strong> <span id="adminStatusBadge" class="badge bg-success">Active</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lookups Section Header & Controls -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-sliders me-2 text-danger"></i>System Lookups Management</h5>
+                    <small class="text-muted">Manage system reference data, departments, semesters, rooms, and status codes</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="addNewBtn" class="btn btn-danger btn-sm fw-semibold">
+                        <i class="bi bi-plus-circle me-1"></i> Add New Item
+                    </button>
+                    <button id="refreshBtn" class="btn btn-outline-secondary btn-sm" title="Refresh Data">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lookup Entity Category Selector Pills -->
+            <div class="card-body bg-light border-bottom p-3">
+                <ul class="nav nav-pills gap-1 flex-wrap" id="lookupTabs">
+                    <li class="nav-item"><button class="nav-link active btn-sm" data-category="departments"><i class="bi bi-building me-1"></i>Departments</button></li>
+                    <li class="nav-item"><button class="nav-link btn-sm" data-category="semesters"><i class="bi bi-calendar3 me-1"></i>Semesters</button></li>
+                    <li class="nav-item"><button class="nav-link btn-sm" data-category="rooms"><i class="bi bi-door-open me-1"></i>Rooms</button></li>
+                    <li class="nav-item"><button class="nav-link btn-sm" data-category="CourseStatuses"><i class="bi bi-journal-check me-1"></i>Course Statuses</button></li>
+                    <li class="nav-item"><button class="nav-link btn-sm" data-category="StudentStatuses"><i class="bi bi-person-badge me-1"></i>Student Statuses</button></li>
+                    <li class="nav-item"><button class="nav-link btn-sm" data-category="InstructorStatuses"><i class="bi bi-person-workspace me-1"></i>Instructor Statuses</button></li>
+                    <li class="nav-item"><button class="nav-link btn-sm" data-category="OfferingStatuses"><i class="bi bi-calendar-event me-1"></i>Offering Statuses</button></li>
+                    <li class="nav-item"><button class="nav-link btn-sm" data-category="EnrollmentStatuses"><i class="bi bi-card-checklist me-1"></i>Enrollment Statuses</button></li>
+                    <li class="nav-item"><button class="nav-link btn-sm" data-category="AttendanceStatuses"><i class="bi bi-clock-history me-1"></i>Attendance Statuses</button></li>
+                </ul>
+
+                <div class="row g-2 mt-2 align-items-center">
+                    <div class="col-md-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search lookup records...">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">Clear</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="lookupsTable">
+                        <thead class="table-light" id="tableHead">
+                            <!-- Dynamic Table Head -->
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr><td colspan="6" class="text-center text-muted py-4">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-footer bg-white py-2 text-muted small d-flex justify-content-between align-items-center">
+                <span id="recordsCountText">Showing 0 records</span>
+                <span>Active Lookup: <strong id="currentCategoryText" class="text-danger">Departments</strong></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Create / Edit -->
+<div class="modal fade" id="itemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="itemModalTitle">Add New Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="itemModalBody">
+                <!-- Dynamic Form Fields inserted by JS -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger btn-sm fw-semibold" id="saveItemBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Delete Confirmation -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <div id="deleteAlert" class="alert alert-danger d-none mb-3"></div>
+                <p class="mb-0 fs-6">Are you sure you want to delete <strong id="deleteItemName">this item</strong>?</p>
+                <small class="text-muted">This action cannot be undone. Referencing records may prevent deletion.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger btn-sm fw-semibold" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API_BASE = '/api/admin';
+    const API_VERSION = '1.0';
+    let currentCategory = 'departments';
+    let currentData = [];
+    let editingItemId = null;
+    let deletingItemId = null;
+
+    const itemModal = new bootstrap.Modal(document.getElementById('itemModal'));
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+
+    async function apiRequest(url, options = {}) {
+        options.headers = options.headers || {};
+        options.headers['X-Api-Version'] = API_VERSION;
+        options.headers['Content-Type'] = 'application/json';
+
+        const token = localStorage.getItem('admin_jwt_token');
+        if (token) {
+            options.headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(url, options);
+        const data = await response.json().catch(() => null);
+
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('admin_jwt_token');
+            window.location.replace('adminlogin.html');
+            return null;
+        }
+
+        if (!response.ok) {
+            const errorMsg = data?.message || `HTTP Error ${response.status}`;
+            throw new Error(errorMsg);
+        }
+
+        return data;
+    }
+
+    function showAlert(message, type = 'danger') {
+        const alertBox = document.getElementById('alertBox');
+        alertBox.className = `alert alert-${type} mx-auto mb-3 shadow-sm`;
+        alertBox.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-circle'}-fill me-2"></i>${message}`;
+        alertBox.classList.remove('d-none');
+        setTimeout(() => alertBox.classList.add('d-none'), 5000);
+    }
+
+    async function loadAdminProfile() {
+        try {
+            const profile = await apiRequest(`${API_BASE}/me`);
+            if (profile) {
+                document.getElementById('adminProfileEmail').textContent = profile.email;
+                document.getElementById('adminProfileId').textContent = profile.userId;
+                document.getElementById('adminProfileEmailText').textContent = profile.email;
+            }
+        } catch (err) {
+            console.error('Error loading profile:', err);
+        }
+    }
+
+    async function loadLookupData() {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm text-danger me-2" role="status"></div>Loading ${currentCategory}...</td></tr>`;
+
+        try {
+            let endpoint = '';
+            if (currentCategory === 'departments' || currentCategory === 'semesters' || currentCategory === 'rooms') {
+                endpoint = `${API_BASE}/lookups/${currentCategory}`;
+            } else {
+                endpoint = `${API_BASE}/lookups/status-tables/${currentCategory}`;
+            }
+
+            const data = await apiRequest(endpoint);
+            currentData = data || [];
+            renderTable();
+        } catch (err) {
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Failed to load data: ${err.message}</td></tr>`;
+            showAlert(err.message, 'danger');
+        }
+    }
+
+    function renderTable() {
+        const tableHead = document.getElementById('tableHead');
+        const tableBody = document.getElementById('tableBody');
+        const searchInput = document.getElementById('searchInput').value.toLowerCase().trim();
+
+        document.getElementById('currentCategoryText').textContent = getCategoryTitle(currentCategory);
+
+        let filtered = currentData;
+        if (searchInput) {
+            filtered = currentData.filter(item => JSON.stringify(item).toLowerCase().includes(searchInput));
+        }
+
+        document.getElementById('recordsCountText').textContent = `Showing ${filtered.length} of ${currentData.length} records`;
+
+        if (filtered.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No records found.</td></tr>`;
+            return;
+        }
+
+        if (currentCategory === 'departments') {
+            tableHead.innerHTML = `
+                <tr>
+                    <th style="width: 70px;">ID</th>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Created At</th>
+                    <th class="text-end pe-3">Actions</th>
+                </tr>`;
+            tableBody.innerHTML = filtered.map(item => `
+                <tr>
+                    <td><strong>#${item.departmentId}</strong></td>
+                    <td><span class="badge bg-secondary">${escapeHtml(item.departmentCode)}</span></td>
+                    <td class="fw-bold">${escapeHtml(item.departmentName)}</td>
+                    <td class="small text-muted">${new Date(item.createdAt).toLocaleDateString()}</td>
+                    <td class="text-end pe-3">
+                        <button class="btn btn-outline-primary btn-sm me-1" onclick="openEditModal(${item.departmentId})"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="openDeleteModal(${item.departmentId}, '${escapeHtml(item.departmentName)}')"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>`).join('');
+
+        } else if (currentCategory === 'semesters') {
+            tableHead.innerHTML = `
+                <tr>
+                    <th style="width: 70px;">ID</th>
+                    <th>Semester Name</th>
+                    <th>Academic Year</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Current</th>
+                    <th class="text-end pe-3">Actions</th>
+                </tr>`;
+            tableBody.innerHTML = filtered.map(item => `
+                <tr>
+                    <td><strong>#${item.semesterId}</strong></td>
+                    <td class="fw-bold">${escapeHtml(item.semesterName)}</td>
+                    <td><span class="badge bg-info text-dark">${escapeHtml(item.academicYear)}</span></td>
+                    <td class="small">${item.startDate}</td>
+                    <td class="small">${item.endDate}</td>
+                    <td>${item.isCurrent ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Current</span>' : '<span class="badge bg-light text-dark border">No</span>'}</td>
+                    <td class="text-end pe-3">
+                        <button class="btn btn-outline-primary btn-sm me-1" onclick="openEditModal(${item.semesterId})"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="openDeleteModal(${item.semesterId}, '${escapeHtml(item.semesterName)}')"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>`).join('');
+
+        } else if (currentCategory === 'rooms') {
+            tableHead.innerHTML = `
+                <tr>
+                    <th style="width: 70px;">ID</th>
+                    <th>Building</th>
+                    <th>Room #</th>
+                    <th>Capacity</th>
+                    <th class="text-end pe-3">Actions</th>
+                </tr>`;
+            tableBody.innerHTML = filtered.map(item => `
+                <tr>
+                    <td><strong>#${item.roomId}</strong></td>
+                    <td class="fw-bold">${escapeHtml(item.buildingName)}</td>
+                    <td><span class="badge bg-dark">${escapeHtml(item.roomNumber)}</span></td>
+                    <td><span class="badge bg-secondary">${item.capacity} seats</span></td>
+                    <td class="text-end pe-3">
+                        <button class="btn btn-outline-primary btn-sm me-1" onclick="openEditModal(${item.roomId})"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="openDeleteModal(${item.roomId}, '${escapeHtml(item.buildingName)} - ${escapeHtml(item.roomNumber)}')"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>`).join('');
+
+        } else {
+            // Status Tables
+            const hasDesc = currentCategory !== 'AttendanceStatuses';
+            tableHead.innerHTML = `
+                <tr>
+                    <th style="width: 70px;">ID</th>
+                    <th>Status Name</th>
+                    ${hasDesc ? '<th>Description</th>' : ''}
+                    <th class="text-end pe-3">Actions</th>
+                </tr>`;
+            tableBody.innerHTML = filtered.map(item => `
+                <tr>
+                    <td><strong>#${item.id}</strong></td>
+                    <td><span class="badge bg-primary fs-6 fw-normal px-2 py-1">${escapeHtml(item.statusName)}</span></td>
+                    ${hasDesc ? `<td class="text-muted small">${escapeHtml(item.description || '-')}</td>` : ''}
+                    <td class="text-end pe-3">
+                        <button class="btn btn-outline-primary btn-sm me-1" onclick="openEditModal(${item.id})"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="openDeleteModal(${item.id}, '${escapeHtml(item.statusName)}')"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>`).join('');
+        }
+    }
+
+    function getCategoryTitle(cat) {
+        const titles = {
+            'departments': 'Departments',
+            'semesters': 'Semesters',
+            'rooms': 'Rooms',
+            'CourseStatuses': 'Course Statuses',
+            'StudentStatuses': 'Student Statuses',
+            'InstructorStatuses': 'Instructor Statuses',
+            'OfferingStatuses': 'Offering Statuses',
+            'EnrollmentStatuses': 'Enrollment Statuses',
+            'AttendanceStatuses': 'Attendance Statuses'
+        };
+        return titles[cat] || cat;
+    }
+
+    function openAddModal() {
+        editingItemId = null;
+        document.getElementById('itemModalTitle').textContent = `Add New ${getCategoryTitle(currentCategory).slice(0, -1)}`;
+        buildForm({});
+        itemModal.show();
+    }
+
+    function openEditModal(id) {
+        editingItemId = id;
+        document.getElementById('itemModalTitle').textContent = `Edit ${getCategoryTitle(currentCategory).slice(0, -1)}`;
+        let item = null;
+        if (currentCategory === 'departments') item = currentData.find(x => x.departmentId === id);
+        else if (currentCategory === 'semesters') item = currentData.find(x => x.semesterId === id);
+        else if (currentCategory === 'rooms') item = currentData.find(x => x.roomId === id);
+        else item = currentData.find(x => x.id === id);
+
+        buildForm(item || {});
+        itemModal.show();
+    }
+
+    function buildForm(data) {
+        const body = document.getElementById('itemModalBody');
+        if (currentCategory === 'departments') {
+            body.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Department Code *</label>
+                    <input type="text" id="deptCode" class="form-control" value="${escapeHtml(data.departmentCode || '')}" placeholder="e.g. CS" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Department Name *</label>
+                    <input type="text" id="deptName" class="form-control" value="${escapeHtml(data.departmentName || '')}" placeholder="e.g. Computer Science" required>
+                </div>`;
+        } else if (currentCategory === 'semesters') {
+            body.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Semester Name *</label>
+                    <input type="text" id="semName" class="form-control" value="${escapeHtml(data.semesterName || '')}" placeholder="e.g. Fall 2026" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Academic Year *</label>
+                    <input type="text" id="semYear" class="form-control" value="${escapeHtml(data.academicYear || '2026')}" placeholder="e.g. 2026" required>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label fw-bold small">Start Date *</label>
+                        <input type="date" id="semStart" class="form-control" value="${data.startDate || ''}" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-bold small">End Date *</label>
+                        <input type="date" id="semEnd" class="form-control" value="${data.endDate || ''}" required>
+                    </div>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="semCurrent" ${data.isCurrent ? 'checked' : ''}>
+                    <label class="form-check-label small" for="semCurrent">Set as Active Current Semester</label>
+                </div>`;
+        } else if (currentCategory === 'rooms') {
+            body.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Building Name *</label>
+                    <input type="text" id="roomBldg" class="form-control" value="${escapeHtml(data.buildingName || '')}" placeholder="e.g. Science Complex" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Room Number *</label>
+                    <input type="text" id="roomNum" class="form-control" value="${escapeHtml(data.roomNumber || '')}" placeholder="e.g. 301-B" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Seating Capacity *</label>
+                    <input type="number" id="roomCap" class="form-control" value="${data.capacity || 30}" min="1" required>
+                </div>`;
+        } else {
+            const hasDesc = currentCategory !== 'AttendanceStatuses';
+            body.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Status Name *</label>
+                    <input type="text" id="statusName" class="form-control" value="${escapeHtml(data.statusName || '')}" placeholder="Status label" required>
+                </div>
+                ${hasDesc ? `
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Description</label>
+                    <textarea id="statusDesc" class="form-control" rows="2" placeholder="Optional description...">${escapeHtml(data.description || '')}</textarea>
+                </div>` : ''}`;
+        }
+    }
+
+    async function saveItem() {
+        const saveBtn = document.getElementById('saveItemBtn');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Saving...`;
+
+        try {
+            let payload = {};
+            let endpoint = '';
+
+            if (currentCategory === 'departments') {
+                payload = {
+                    departmentCode: document.getElementById('deptCode').value.trim(),
+                    departmentName: document.getElementById('deptName').value.trim()
+                };
+                endpoint = editingItemId ? `${API_BASE}/lookups/departments/${editingItemId}` : `${API_BASE}/lookups/departments`;
+            } else if (currentCategory === 'semesters') {
+                payload = {
+                    semesterName: document.getElementById('semName').value.trim(),
+                    academicYear: document.getElementById('semYear').value.trim(),
+                    startDate: document.getElementById('semStart').value,
+                    endDate: document.getElementById('semEnd').value,
+                    isCurrent: document.getElementById('semCurrent').checked
+                };
+                endpoint = editingItemId ? `${API_BASE}/lookups/semesters/${editingItemId}` : `${API_BASE}/lookups/semesters`;
+            } else if (currentCategory === 'rooms') {
+                payload = {
+                    buildingName: document.getElementById('roomBldg').value.trim(),
+                    roomNumber: document.getElementById('roomNum').value.trim(),
+                    capacity: parseInt(document.getElementById('roomCap').value, 10)
+                };
+                endpoint = editingItemId ? `${API_BASE}/lookups/rooms/${editingItemId}` : `${API_BASE}/lookups/rooms`;
+            } else {
+                payload = {
+                    statusName: document.getElementById('statusName').value.trim(),
+                    description: document.getElementById('statusDesc') ? document.getElementById('statusDesc').value.trim() : null
+                };
+                endpoint = editingItemId
+                    ? `${API_BASE}/lookups/status-tables/${currentCategory}/${editingItemId}`
+                    : `${API_BASE}/lookups/status-tables/${currentCategory}`;
+            }
+
+            const method = editingItemId ? 'PUT' : 'POST';
+            await apiRequest(endpoint, { method, body: JSON.stringify(payload) });
+
+            itemModal.hide();
+            showAlert(`Item ${editingItemId ? 'updated' : 'created'} successfully!`, 'success');
+            await loadLookupData();
+        } catch (err) {
+            alert(`Error: ${err.message}`);
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = `Save Changes`;
+        }
+    }
+
+    function openDeleteModal(id, name) {
+        deletingItemId = id;
+        document.getElementById('deleteItemName').textContent = name;
+        document.getElementById('deleteAlert').classList.add('d-none');
+        deleteModal.show();
+    }
+
+    async function confirmDelete() {
+        const deleteBtn = document.getElementById('confirmDeleteBtn');
+        const deleteAlert = document.getElementById('deleteAlert');
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Deleting...`;
+
+        try {
+            let endpoint = '';
+            if (currentCategory === 'departments' || currentCategory === 'semesters' || currentCategory === 'rooms') {
+                endpoint = `${API_BASE}/lookups/${currentCategory}/${deletingItemId}`;
+            } else {
+                endpoint = `${API_BASE}/lookups/status-tables/${currentCategory}/${deletingItemId}`;
+            }
+
+            await apiRequest(endpoint, { method: 'DELETE' });
+            deleteModal.hide();
+            showAlert('Item deleted successfully.', 'success');
+            await loadLookupData();
+        } catch (err) {
+            deleteAlert.textContent = err.message;
+            deleteAlert.classList.remove('d-none');
+        } finally {
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = `Delete`;
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        loadAdminProfile();
+        loadLookupData();
+
+        document.querySelectorAll('#lookupTabs button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('#lookupTabs button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentCategory = e.target.getAttribute('data-category');
+                document.getElementById('searchInput').value = '';
+                loadLookupData();
+            });
+        });
+
+        document.getElementById('addNewBtn').addEventListener('click', openAddModal);
+        document.getElementById('refreshBtn').addEventListener('click', loadLookupData);
+        document.getElementById('saveItemBtn').addEventListener('click', saveItem);
+        document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
+        document.getElementById('searchInput').addEventListener('input', renderTable);
+        document.getElementById('clearSearchBtn').addEventListener('click', () => {
+            document.getElementById('searchInput').value = '';
+            renderTable();
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('admin_jwt_token');
+            window.location.replace('adminlogin.html');
+        });
+    });
+</script>
+</body>
+</html>

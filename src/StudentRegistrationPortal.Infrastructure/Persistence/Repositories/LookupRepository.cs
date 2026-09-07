@@ -154,4 +154,337 @@ public class LookupRepository : ILookupRepository
             throw;
         }
     }
+
+    public async Task<IReadOnlyList<DepartmentDetailsDto>> GetAllDepartmentsAsync(CancellationToken cancellationToken = default)
+    {
+        var list = new List<DepartmentDetailsDto>();
+        const string sql = "SELECT DepartmentId, DepartmentCode, DepartmentName, CreatedAt FROM Departments ORDER BY DepartmentName ASC;";
+        await using var cmd = await CreateCommandAsync(sql);
+        await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+        while (await r.ReadAsync(cancellationToken))
+        {
+            list.Add(new DepartmentDetailsDto(
+                r.GetInt32("DepartmentId"),
+                r.GetString("DepartmentCode"),
+                r.GetString("DepartmentName"),
+                r.GetDateTime("CreatedAt")
+            ));
+        }
+        return list;
+    }
+
+    public async Task<DepartmentDetailsDto?> GetDepartmentByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT DepartmentId, DepartmentCode, DepartmentName, CreatedAt FROM Departments WHERE DepartmentId = @id;";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@id", id);
+        await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+        if (await r.ReadAsync(cancellationToken))
+        {
+            return new DepartmentDetailsDto(
+                r.GetInt32("DepartmentId"),
+                r.GetString("DepartmentCode"),
+                r.GetString("DepartmentName"),
+                r.GetDateTime("CreatedAt")
+            );
+        }
+        return null;
+    }
+
+    public async Task<int> CreateDepartmentAsync(CreateUpdateDepartmentDto dto, CancellationToken cancellationToken = default)
+    {
+        const string sql = "INSERT INTO Departments (DepartmentCode, DepartmentName) VALUES (@code, @name); SELECT LAST_INSERT_ID();";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@code", dto.DepartmentCode);
+        cmd.Parameters.AddWithValue("@name", dto.DepartmentName);
+        var result = await cmd.ExecuteScalarAsync(cancellationToken);
+        return Convert.ToInt32(result);
+    }
+
+    public async Task<bool> UpdateDepartmentAsync(int id, CreateUpdateDepartmentDto dto, CancellationToken cancellationToken = default)
+    {
+        const string sql = "UPDATE Departments SET DepartmentCode = @code, DepartmentName = @name WHERE DepartmentId = @id;";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@id", id);
+        cmd.Parameters.AddWithValue("@code", dto.DepartmentCode);
+        cmd.Parameters.AddWithValue("@name", dto.DepartmentName);
+        int rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        return rows > 0;
+    }
+
+    public async Task<bool> DeleteDepartmentAsync(int id, CancellationToken cancellationToken = default)
+    {
+        const string sql = "DELETE FROM Departments WHERE DepartmentId = @id;";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@id", id);
+        int rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        return rows > 0;
+    }
+
+    public async Task<IReadOnlyList<SemesterDetailsDto>> GetAllSemestersAsync(CancellationToken cancellationToken = default)
+    {
+        var list = new List<SemesterDetailsDto>();
+        const string sql = "SELECT SemesterId, SemesterName, AcademicYear, StartDate, EndDate, IsCurrent FROM Semesters ORDER BY SemesterId DESC;";
+        await using var cmd = await CreateCommandAsync(sql);
+        await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+        while (await r.ReadAsync(cancellationToken))
+        {
+            list.Add(new SemesterDetailsDto(
+                r.GetInt32("SemesterId"),
+                r.GetString("SemesterName"),
+                r["AcademicYear"].ToString() ?? "",
+                DateOnly.FromDateTime(r.GetDateTime("StartDate")),
+                DateOnly.FromDateTime(r.GetDateTime("EndDate")),
+                r.GetBoolean("IsCurrent")
+            ));
+        }
+        return list;
+    }
+
+    public async Task<SemesterDetailsDto?> GetSemesterByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT SemesterId, SemesterName, AcademicYear, StartDate, EndDate, IsCurrent FROM Semesters WHERE SemesterId = @id;";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@id", id);
+        await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+        if (await r.ReadAsync(cancellationToken))
+        {
+            return new SemesterDetailsDto(
+                r.GetInt32("SemesterId"),
+                r.GetString("SemesterName"),
+                r["AcademicYear"].ToString() ?? "",
+                DateOnly.FromDateTime(r.GetDateTime("StartDate")),
+                DateOnly.FromDateTime(r.GetDateTime("EndDate")),
+                r.GetBoolean("IsCurrent")
+            );
+        }
+        return null;
+    }
+
+    public async Task<int> CreateSemesterAsync(CreateUpdateSemesterDto dto, CancellationToken cancellationToken = default)
+    {
+        if (dto.IsCurrent)
+        {
+            const string clearCurrentSql = "UPDATE Semesters SET IsCurrent = 0;";
+            await using var clearCmd = await CreateCommandAsync(clearCurrentSql);
+            await clearCmd.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        const string sql = "INSERT INTO Semesters (SemesterName, AcademicYear, StartDate, EndDate, IsCurrent) VALUES (@name, @year, @start, @end, @isCurrent); SELECT LAST_INSERT_ID();";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@name", dto.SemesterName);
+        cmd.Parameters.AddWithValue("@year", int.TryParse(dto.AcademicYear, out int yr) ? yr : dto.AcademicYear);
+        cmd.Parameters.AddWithValue("@start", dto.StartDate.ToDateTime(TimeOnly.MinValue));
+        cmd.Parameters.AddWithValue("@end", dto.EndDate.ToDateTime(TimeOnly.MinValue));
+        cmd.Parameters.AddWithValue("@isCurrent", dto.IsCurrent);
+        var result = await cmd.ExecuteScalarAsync(cancellationToken);
+        return Convert.ToInt32(result);
+    }
+
+    public async Task<bool> UpdateSemesterAsync(int id, CreateUpdateSemesterDto dto, CancellationToken cancellationToken = default)
+    {
+        if (dto.IsCurrent)
+        {
+            const string clearCurrentSql = "UPDATE Semesters SET IsCurrent = 0 WHERE SemesterId <> @id;";
+            await using var clearCmd = await CreateCommandAsync(clearCurrentSql);
+            clearCmd.Parameters.AddWithValue("@id", id);
+            await clearCmd.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        const string sql = "UPDATE Semesters SET SemesterName = @name, AcademicYear = @year, StartDate = @start, EndDate = @end, IsCurrent = @isCurrent WHERE SemesterId = @id;";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@id", id);
+        cmd.Parameters.AddWithValue("@name", dto.SemesterName);
+        cmd.Parameters.AddWithValue("@year", int.TryParse(dto.AcademicYear, out int yr) ? yr : dto.AcademicYear);
+        cmd.Parameters.AddWithValue("@start", dto.StartDate.ToDateTime(TimeOnly.MinValue));
+        cmd.Parameters.AddWithValue("@end", dto.EndDate.ToDateTime(TimeOnly.MinValue));
+        cmd.Parameters.AddWithValue("@isCurrent", dto.IsCurrent);
+        int rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        return rows > 0;
+    }
+
+    public async Task<bool> DeleteSemesterAsync(int id, CancellationToken cancellationToken = default)
+    {
+        const string sql = "DELETE FROM Semesters WHERE SemesterId = @id;";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@id", id);
+        int rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        return rows > 0;
+    }
+
+    public async Task<IReadOnlyList<RoomDetailsDto>> GetAllRoomsAsync(CancellationToken cancellationToken = default)
+    {
+        var list = new List<RoomDetailsDto>();
+        const string sql = "SELECT RoomId, BuildingName, RoomNumber, Capacity FROM Rooms ORDER BY BuildingName, RoomNumber ASC;";
+        await using var cmd = await CreateCommandAsync(sql);
+        await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+        while (await r.ReadAsync(cancellationToken))
+        {
+            list.Add(new RoomDetailsDto(
+                r.GetInt32("RoomId"),
+                r.GetString("BuildingName"),
+                r.GetString("RoomNumber"),
+                r.GetInt32("Capacity")
+            ));
+        }
+        return list;
+    }
+
+    public async Task<RoomDetailsDto?> GetRoomByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT RoomId, BuildingName, RoomNumber, Capacity FROM Rooms WHERE RoomId = @id;";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@id", id);
+        await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+        if (await r.ReadAsync(cancellationToken))
+        {
+            return new RoomDetailsDto(
+                r.GetInt32("RoomId"),
+                r.GetString("BuildingName"),
+                r.GetString("RoomNumber"),
+                r.GetInt32("Capacity")
+            );
+        }
+        return null;
+    }
+
+    public async Task<int> CreateRoomAsync(CreateUpdateRoomDto dto, CancellationToken cancellationToken = default)
+    {
+        const string sql = "INSERT INTO Rooms (BuildingName, RoomNumber, Capacity) VALUES (@bldg, @room, @cap); SELECT LAST_INSERT_ID();";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@bldg", dto.BuildingName);
+        cmd.Parameters.AddWithValue("@room", dto.RoomNumber);
+        cmd.Parameters.AddWithValue("@cap", dto.Capacity);
+        var result = await cmd.ExecuteScalarAsync(cancellationToken);
+        return Convert.ToInt32(result);
+    }
+
+    public async Task<bool> UpdateRoomAsync(int id, CreateUpdateRoomDto dto, CancellationToken cancellationToken = default)
+    {
+        const string sql = "UPDATE Rooms SET BuildingName = @bldg, RoomNumber = @room, Capacity = @cap WHERE RoomId = @id;";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@id", id);
+        cmd.Parameters.AddWithValue("@bldg", dto.BuildingName);
+        cmd.Parameters.AddWithValue("@room", dto.RoomNumber);
+        cmd.Parameters.AddWithValue("@cap", dto.Capacity);
+        int rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        return rows > 0;
+    }
+
+    public async Task<bool> DeleteRoomAsync(int id, CancellationToken cancellationToken = default)
+    {
+        const string sql = "DELETE FROM Rooms WHERE RoomId = @id;";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@id", id);
+        int rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
+
+        return rows > 0;
+    }
+
+    private static readonly Dictionary<string, (string PrimaryKey, bool HasDescription)> StatusTables = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["CourseStatuses"] = ("CourseStatusId", true),
+        ["StudentStatuses"] = ("StudentStatusId", true),
+        ["InstructorStatuses"] = ("InstructorStatusId", true),
+        ["OfferingStatuses"] = ("OfferingStatusId", true),
+        ["EnrollmentStatuses"] = ("EnrollmentStatusId", true),
+        ["AttendanceStatuses"] = ("AttendanceStatusId", false)
+    };
+
+    private static (string TableName, string PrimaryKey, bool HasDescription) ValidateStatusTable(string tableName)
+    {
+        if (string.IsNullOrWhiteSpace(tableName) || !StatusTables.TryGetValue(tableName, out var info))
+        {
+            throw new ArgumentException($"Invalid lookup table name '{tableName}'. Allowed: {string.Join(", ", StatusTables.Keys)}", nameof(tableName));
+        }
+        return (StatusTables.Keys.First(k => k.Equals(tableName, StringComparison.OrdinalIgnoreCase)), info.PrimaryKey, info.HasDescription);
+    }
+
+    public async Task<IReadOnlyList<StatusLookupItemDto>> GetStatusItemsAsync(string tableName, CancellationToken cancellationToken = default)
+    {
+        var (table, pk, hasDesc) = ValidateStatusTable(tableName);
+        var list = new List<StatusLookupItemDto>();
+        string sql = hasDesc
+            ? $"SELECT {pk} AS Id, StatusName, Description FROM {table} ORDER BY {pk} ASC;"
+            : $"SELECT {pk} AS Id, StatusName, NULL AS Description FROM {table} ORDER BY {pk} ASC;";
+
+        await using var cmd = await CreateCommandAsync(sql);
+        await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+        while (await r.ReadAsync(cancellationToken))
+        {
+            list.Add(new StatusLookupItemDto(
+                r.GetInt32("Id"),
+                r.GetString("StatusName"),
+                r.IsDBNull(r.GetOrdinal("Description")) ? null : r.GetString("Description")
+            ));
+        }
+        return list;
+    }
+
+    public async Task<StatusLookupItemDto?> GetStatusItemByIdAsync(string tableName, int id, CancellationToken cancellationToken = default)
+    {
+        var (table, pk, hasDesc) = ValidateStatusTable(tableName);
+        string sql = hasDesc
+            ? $"SELECT {pk} AS Id, StatusName, Description FROM {table} WHERE {pk} = @id;"
+            : $"SELECT {pk} AS Id, StatusName, NULL AS Description FROM {table} WHERE {pk} = @id;";
+
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@id", id);
+        await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
+        if (await r.ReadAsync(cancellationToken))
+        {
+            return new StatusLookupItemDto(
+                r.GetInt32("Id"),
+                r.GetString("StatusName"),
+                r.IsDBNull(r.GetOrdinal("Description")) ? null : r.GetString("Description")
+            );
+        }
+        return null;
+    }
+
+    public async Task<int> CreateStatusItemAsync(string tableName, CreateUpdateStatusItemDto dto, CancellationToken cancellationToken = default)
+    {
+        var (table, pk, hasDesc) = ValidateStatusTable(tableName);
+        string sql = hasDesc
+            ? $"INSERT INTO {table} (StatusName, Description) VALUES (@name, @desc); SELECT LAST_INSERT_ID();"
+            : $"INSERT INTO {table} (StatusName) VALUES (@name); SELECT LAST_INSERT_ID();";
+
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@name", dto.StatusName);
+        if (hasDesc)
+        {
+            cmd.Parameters.AddWithValue("@desc", (object?)dto.Description ?? DBNull.Value);
+        }
+        var result = await cmd.ExecuteScalarAsync(cancellationToken);
+        return Convert.ToInt32(result);
+    }
+
+    public async Task<bool> UpdateStatusItemAsync(string tableName, int id, CreateUpdateStatusItemDto dto, CancellationToken cancellationToken = default)
+    {
+        var (table, pk, hasDesc) = ValidateStatusTable(tableName);
+        string sql = hasDesc
+            ? $"UPDATE {table} SET StatusName = @name, Description = @desc WHERE {pk} = @id;"
+            : $"UPDATE {table} SET StatusName = @name WHERE {pk} = @id;";
+
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@id", id);
+        cmd.Parameters.AddWithValue("@name", dto.StatusName);
+        if (hasDesc)
+        {
+            cmd.Parameters.AddWithValue("@desc", (object?)dto.Description ?? DBNull.Value);
+        }
+        int rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        return rows > 0;
+    }
+
+    public async Task<bool> DeleteStatusItemAsync(string tableName, int id, CancellationToken cancellationToken = default)
+    {
+        var (table, pk, _) = ValidateStatusTable(tableName);
+        string sql = $"DELETE FROM {table} WHERE {pk} = @id;";
+        await using var cmd = await CreateCommandAsync(sql);
+        cmd.Parameters.AddWithValue("@id", id);
+        int rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        return rows > 0;
+    }
 }
+
