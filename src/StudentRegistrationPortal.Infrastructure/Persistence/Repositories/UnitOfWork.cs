@@ -14,6 +14,8 @@ public class UnitOfWork : IUnitOfWork
     private IStudentRepository? _students;
     private IUserRepository? _users;
     private ICoursesRepository? _courses;
+    private IAdminRepository? _admin;
+    private ILookupRepository? _lookups;
     private bool _disposed;
 
     public UnitOfWork(MySqlDataSource dataSource, ILoggerFactory loggerFactory)
@@ -51,6 +53,26 @@ public class UnitOfWork : IUnitOfWork
             },
             transactionProvider: () => _transaction,
             _loggerFactory.CreateLogger<CoursesRepository>());
+
+    public IAdminRepository Admin =>
+        _admin ??= new AdminRepository(
+            connectionProvider: async () =>
+            {
+                _connection ??= await _dataSource.OpenConnectionAsync();
+                return _connection;
+            },
+            transactionProvider: () => _transaction,
+            _loggerFactory.CreateLogger<AdminRepository>());
+
+    public ILookupRepository Lookups =>
+        _lookups ??= new LookupRepository(
+            connectionProvider: async () =>
+            {
+                _connection ??= await _dataSource.OpenConnectionAsync();
+                return _connection;
+            },
+            transactionProvider: () => _transaction,
+            _loggerFactory.CreateLogger<LookupRepository>());
 
     public async Task BeginTransactionAsync()
     {

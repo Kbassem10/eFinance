@@ -40,19 +40,19 @@ public class AdminController : ControllerBase
             return BadRequest(new { message = "Email and password are required." });
         }
 
-        var user = await _unitOfWork.Users.GetByEmailAsync(dto.Email, cancellationToken);
+        var user = await _unitOfWork.Admin.GetByEmailAsync(dto.Email, cancellationToken);
         if (user == null || !BCrypt.Net.BCrypt.EnhancedVerify(dto.Password, user.PasswordHash))
         {
             return Unauthorized(new { message = "Invalid email or password." });
         }
 
-        var roleIds = await _unitOfWork.Users.GetUserRoleIdsAsync(user.UserId, cancellationToken);
+        var roleIds = await _unitOfWork.Admin.GetUserRoleIdsAsync(user.UserId, cancellationToken);
         if (!roleIds.Contains(1))
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { message = "Access denied: User does not have Admin permissions (RoleId 1)." });
         }
 
-        var userRoles = await _unitOfWork.Users.GetUserRolesAsync(user.UserId, cancellationToken);
+        var userRoles = await _unitOfWork.Admin.GetUserRolesAsync(user.UserId, cancellationToken);
         var roleNames = userRoles.Select(r => r.RoleName).ToList();
 
         var token = _jwtTokenService.GenerateToken(user, "Admin");
@@ -90,13 +90,13 @@ public class AdminController : ControllerBase
             return Unauthorized(new { message = "Invalid token claims." });
         }
 
-        var user = await _unitOfWork.Users.GetByIdAsync(currentUserId, cancellationToken);
+        var user = await _unitOfWork.Admin.GetByIdAsync(currentUserId, cancellationToken);
         if (user == null)
         {
             return NotFound(new { message = "Admin user not found." });
         }
 
-        var userRoles = await _unitOfWork.Users.GetUserRolesAsync(user.UserId, cancellationToken);
+        var userRoles = await _unitOfWork.Admin.GetUserRolesAsync(user.UserId, cancellationToken);
         var adminDto = new AdminDetailsDto
         {
             UserId = user.UserId,
@@ -117,12 +117,12 @@ public class AdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllUsers(CancellationToken cancellationToken)
     {
-        var users = await _unitOfWork.Users.GetAllAsync(cancellationToken);
+        var users = await _unitOfWork.Admin.GetAllUsersAsync(cancellationToken);
         var result = new List<AdminDetailsDto>();
 
         foreach (var user in users)
         {
-            var userRoles = await _unitOfWork.Users.GetUserRolesAsync(user.UserId, cancellationToken);
+            var userRoles = await _unitOfWork.Admin.GetUserRolesAsync(user.UserId, cancellationToken);
             result.Add(new AdminDetailsDto
             {
                 UserId = user.UserId,
@@ -142,7 +142,7 @@ public class AdminController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<AdminEnrollmentDetailsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetEnrollments([FromQuery] int? statusId, CancellationToken cancellationToken)
     {
-        var list = await _unitOfWork.Students.GetAllEnrollmentsAsync(statusId, cancellationToken);
+        var list = await _unitOfWork.Admin.GetAllEnrollmentsAsync(statusId, cancellationToken);
         return Ok(list);
     }
 
@@ -153,7 +153,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> ApproveEnrollment([FromRoute] int id, CancellationToken cancellationToken)
     {
         const int enrolledStatusId = 1; // Enrolled
-        bool updated = await _unitOfWork.Students.UpdateEnrollmentStatusAsync(id, enrolledStatusId, cancellationToken);
+        bool updated = await _unitOfWork.Admin.UpdateEnrollmentStatusAsync(id, enrolledStatusId, cancellationToken);
         if (!updated)
         {
             return NotFound(new { message = $"Enrollment record with ID {id} not found." });
@@ -168,7 +168,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> DeclineEnrollment([FromRoute] int id, CancellationToken cancellationToken)
     {
         const int droppedStatusId = 3; // Dropped / Declined
-        bool updated = await _unitOfWork.Students.UpdateEnrollmentStatusAsync(id, droppedStatusId, cancellationToken);
+        bool updated = await _unitOfWork.Admin.UpdateEnrollmentStatusAsync(id, droppedStatusId, cancellationToken);
         if (!updated)
         {
             return NotFound(new { message = $"Enrollment record with ID {id} not found." });
@@ -187,7 +187,7 @@ public class AdminController : ControllerBase
             return BadRequest(new { message = "Valid EnrollmentStatusId is required." });
         }
 
-        bool updated = await _unitOfWork.Students.UpdateEnrollmentStatusAsync(id, dto.EnrollmentStatusId, cancellationToken);
+        bool updated = await _unitOfWork.Admin.UpdateEnrollmentStatusAsync(id, dto.EnrollmentStatusId, cancellationToken);
         if (!updated)
         {
             return NotFound(new { message = $"Enrollment record with ID {id} not found." });
@@ -201,20 +201,11 @@ public class AdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUserById([FromRoute] int userId, CancellationToken cancellationToken)
     {
-        var user = await _unitOfWork.Users.GetUserDetailsByIdAsync(userId, cancellationToken);
+        var user = await _unitOfWork.Admin.GetUserDetailsByIdAsync(userId, cancellationToken);
         if (user == null)
         {
             return NotFound(new { message = $"User with ID {userId} was not found." });
         }
         return Ok(user);
-    }
-
-    [HttpGet("lookups")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(AdminLookupsDto), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetLookups(CancellationToken cancellationToken)
-    {
-        var lookups = await _unitOfWork.Users.GetLookupsAsync(cancellationToken);
-        return Ok(lookups);
     }
 }

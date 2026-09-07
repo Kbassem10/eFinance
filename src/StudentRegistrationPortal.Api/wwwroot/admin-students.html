@@ -28,7 +28,7 @@
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <a href="admin.html" class="btn btn-outline-secondary btn-sm fw-semibold">
-                    Approvals & Requests <span id="pendingCountBadge" class="badge bg-secondary ms-1">0</span>
+                    Approvals & Requests
                 </a>
                 <a href="admin-courses.html" class="btn btn-outline-secondary btn-sm fw-semibold">
                     Course Management
@@ -87,8 +87,11 @@
                         <select id="statusFilter" class="form-select form-select-sm">
                             <option value="">All Statuses</option>
                             <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Probation">Probation</option>
                             <option value="Suspended">Suspended</option>
                             <option value="Graduated">Graduated</option>
+                            <option value="Withdrawn">Withdrawn</option>
                         </select>
                     </div>
                 </div>
@@ -299,7 +302,8 @@
             const pendingCount = (enrollments || []).filter(e => 
                 (e.statusName && e.statusName.toLowerCase() === 'pending') || e.enrollmentStatusId === 5
             ).length;
-            document.getElementById('pendingCountBadge').textContent = pendingCount;
+            const pendingBadge = document.getElementById('pendingCountBadge');
+            if (pendingBadge) pendingBadge.textContent = pendingCount;
         } catch (e) {
             console.error('Failed to load pending badge:', e);
         }
@@ -307,10 +311,10 @@
 
     async function loadLookups() {
         try {
-            const lookups = await apiRequest(`${API_BASE}/admin/lookups`, { method: 'GET' });
-            if (lookups?.departments?.length) {
+            const departments = await apiRequest('/api/lookups/departments', { method: 'GET' });
+            if (departments?.length) {
                 const sel = document.getElementById('departmentFilter');
-                lookups.departments.forEach(dept => {
+                departments.forEach(dept => {
                     const opt = document.createElement('option');
                     opt.value = dept.name;
                     opt.textContent = dept.name;

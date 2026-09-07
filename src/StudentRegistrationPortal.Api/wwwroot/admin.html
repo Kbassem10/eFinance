@@ -30,7 +30,7 @@
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <a href="admin.html" class="btn btn-danger btn-sm active fw-semibold shadow-sm">
-                    Approvals & Requests <span id="pendingCountBadge" class="badge bg-warning text-dark ms-1">0</span>
+                    Approvals & Requests
                 </a>
                 <a href="admin-courses.html" class="btn btn-outline-secondary btn-sm fw-semibold">
                     Course Management
@@ -76,7 +76,7 @@
                     <div class="col-lg-6 col-md-12">
                         <div class="btn-group btn-group-sm w-100" role="group" aria-label="Status Filters">
                             <button type="button" class="btn btn-outline-secondary filter-btn active" data-status="">All Statuses</button>
-                            <button type="button" class="btn btn-outline-warning filter-btn text-dark" data-status="5">Pending Only</button>
+                            <button type="button" class="btn btn-outline-warning filter-btn text-dark" data-status="5">Pending Only <span id="pendingCountBadge" class="badge bg-warning text-dark border ms-1">0</span></button>
                             <button type="button" class="btn btn-outline-success filter-btn" data-status="1">Enrolled (Approved)</button>
                             <button type="button" class="btn btn-outline-danger filter-btn" data-status="3">Dropped (Declined)</button>
                         </div>
@@ -184,21 +184,31 @@
             const admin = await apiRequest(`${API_BASE}/me`, { method: 'GET' });
             if (!admin) return;
 
-            document.getElementById('adminProfileEmail').textContent = admin.email || 'Admin';
-            document.getElementById('adminProfileEmailText').textContent = admin.email || '-';
-            document.getElementById('adminProfileId').textContent = admin.userId ? `#${admin.userId}` : '-';
+            const emailEl = document.getElementById('adminProfileEmail');
+            if (emailEl) emailEl.textContent = admin.email || 'Admin';
+
+            const emailTextEl = document.getElementById('adminProfileEmailText');
+            if (emailTextEl) emailTextEl.textContent = admin.email || '-';
+
+            const idEl = document.getElementById('adminProfileId');
+            if (idEl) idEl.textContent = admin.userId ? `#${admin.userId}` : '-';
             
             const badgesContainer = document.getElementById('adminRolesBadges');
-            badgesContainer.innerHTML = '';
-            (admin.roles || ['Admin']).forEach(r => {
-                const badge = document.createElement('span');
-                badge.className = 'badge bg-danger me-1';
-                badge.textContent = r;
-                badgesContainer.appendChild(badge);
-            });
+            if (badgesContainer) {
+                badgesContainer.innerHTML = '';
+                (admin.roles || ['Admin']).forEach(r => {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-danger me-1';
+                    badge.textContent = r;
+                    badgesContainer.appendChild(badge);
+                });
+            }
 
-            document.getElementById('adminStatusBadge').textContent = admin.isActive ? 'Active' : 'Inactive';
-            document.getElementById('adminStatusBadge').className = admin.isActive ? 'badge bg-success' : 'badge bg-secondary';
+            const statusBadge = document.getElementById('adminStatusBadge');
+            if (statusBadge) {
+                statusBadge.textContent = admin.isActive ? 'Active' : 'Inactive';
+                statusBadge.className = admin.isActive ? 'badge bg-success' : 'badge bg-secondary';
+            }
         } catch (err) {
             logout();
         }
@@ -206,7 +216,9 @@
 
     async function loadEnrollments() {
         const tbody = document.getElementById('enrollmentsTableBody');
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Loading enrollment requests...</td></tr>`;
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Loading enrollment requests...</td></tr>`;
+        }
 
         try {
             const allItems = await apiRequest(`${API_BASE}/enrollments`, { method: 'GET' });
@@ -216,16 +228,20 @@
             const pendingCount = (allLoadedEnrollments || []).filter(e => 
                 (e.statusName && e.statusName.toLowerCase() === 'pending') || e.enrollmentStatusId === 5
             ).length;
-            document.getElementById('pendingCountBadge').textContent = pendingCount;
+            const pendingCountBadge = document.getElementById('pendingCountBadge');
+            if (pendingCountBadge) pendingCountBadge.textContent = pendingCount;
 
             renderTable();
         } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center py-3">${err.message}</td></tr>`;
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center py-3">${err.message}</td></tr>`;
+            }
         }
     }
 
     function renderTable() {
         const tbody = document.getElementById('enrollmentsTableBody');
+        if (!tbody) return;
         const searchTerm = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
 
         let filtered = allLoadedEnrollments;
@@ -246,7 +262,8 @@
             );
         }
 
-        document.getElementById('recordsCountText').textContent = `Showing ${filtered.length} of ${allLoadedEnrollments.length} records`;
+        const countTextEl = document.getElementById('recordsCountText');
+        if (countTextEl) countTextEl.textContent = `Showing ${filtered.length} of ${allLoadedEnrollments.length} records`;
 
         if (filtered.length === 0) {
             tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No enrollment records matching the selected filter criteria.</td></tr>`;

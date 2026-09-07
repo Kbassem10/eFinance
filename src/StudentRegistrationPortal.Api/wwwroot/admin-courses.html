@@ -28,7 +28,7 @@
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <a href="admin.html" class="btn btn-outline-secondary btn-sm fw-semibold">
-                    Approvals & Requests <span id="pendingCountBadge" class="badge bg-secondary ms-1">0</span>
+                    Approvals & Requests
                 </a>
                 <a href="admin-courses.html" class="btn btn-danger btn-sm active fw-semibold shadow-sm">
                     Course Management
@@ -344,7 +344,8 @@
             const pendingCount = (enrollments || []).filter(e => 
                 (e.statusName && e.statusName.toLowerCase() === 'pending') || e.enrollmentStatusId === 5
             ).length;
-            document.getElementById('pendingCountBadge').textContent = pendingCount;
+            const pendingBadge = document.getElementById('pendingCountBadge');
+            if (pendingBadge) pendingBadge.textContent = pendingCount;
         } catch (e) {
             console.error('Failed to load pending badge:', e);
         }
@@ -352,14 +353,19 @@
 
     async function loadLookups() {
         try {
-            const lookups = await apiRequest(`${API_BASE}/lookups`, { method: 'GET' });
-            if (lookups) {
-                if (lookups.departments?.length) populateSelect('departmentId', lookups.departments);
-                if (lookups.semesters?.length) populateSelect('semesterId', lookups.semesters);
-                if (lookups.instructors?.length) populateSelect('instructorId', lookups.instructors);
-                if (lookups.rooms?.length) populateSelect('roomId', lookups.rooms);
-                if (lookups.courseStatuses?.length) populateSelect('courseStatusId', lookups.courseStatuses);
-            }
+            const [departments, semesters, instructors, rooms, courseStatuses] = await Promise.all([
+                apiRequest('/api/lookups/departments', { method: 'GET' }),
+                apiRequest('/api/lookups/semesters', { method: 'GET' }),
+                apiRequest('/api/lookups/instructors', { method: 'GET' }),
+                apiRequest('/api/lookups/rooms', { method: 'GET' }),
+                apiRequest('/api/lookups/course-statuses', { method: 'GET' })
+            ]);
+
+            if (departments?.length) populateSelect('departmentId', departments);
+            if (semesters?.length) populateSelect('semesterId', semesters);
+            if (instructors?.length) populateSelect('instructorId', instructors);
+            if (rooms?.length) populateSelect('roomId', rooms);
+            if (courseStatuses?.length) populateSelect('courseStatusId', courseStatuses);
         } catch (e) {
             console.error('Failed to load database lookups:', e);
         }
