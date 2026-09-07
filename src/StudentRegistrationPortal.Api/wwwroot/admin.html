@@ -136,7 +136,7 @@
         options.headers['X-Api-Version'] = API_VERSION;
         options.headers['Content-Type'] = 'application/json';
 
-        const token = localStorage.getItem('admin_jwt_token');
+        const token = localStorage.getItem('jwt_token') || localStorage.getItem('admin_jwt_token');
         if (token) {
             options.headers['Authorization'] = `Bearer ${token}`;
         }
@@ -145,8 +145,10 @@
         const data = await response.json().catch(() => null);
 
         if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('jwt_token');
             localStorage.removeItem('admin_jwt_token');
-            window.location.replace('adminlogin.html');
+            localStorage.removeItem('user_info');
+            window.location.replace('login.html');
             return null;
         }
 
@@ -172,9 +174,9 @@
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
-        const token = localStorage.getItem('admin_jwt_token');
+        const token = localStorage.getItem('jwt_token') || localStorage.getItem('admin_jwt_token');
         if (!token) {
-            window.location.replace('adminlogin.html');
+            window.location.replace('login.html');
             return;
         }
 
@@ -375,8 +377,10 @@
     document.getElementById('refreshBtn')?.addEventListener('click', loadEnrollments);
 
     function logout() {
+        localStorage.removeItem('jwt_token');
         localStorage.removeItem('admin_jwt_token');
-        window.location.replace('adminlogin.html');
+        localStorage.removeItem('user_info');
+        window.location.replace('login.html');
     }
 
     document.getElementById('logoutBtn')?.addEventListener('click', logout);

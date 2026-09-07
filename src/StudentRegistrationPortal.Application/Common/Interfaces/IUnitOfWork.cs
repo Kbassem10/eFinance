@@ -8,6 +8,7 @@ public interface IUnitOfWork : IAsyncDisposable
     ICoursesRepository Courses { get; }
     IAdminRepository Admin { get; }
     ILookupRepository Lookups { get; }
+    IAuthRepository Auth { get; }
 
     Task BeginTransactionAsync();
     Task CommitAsync();

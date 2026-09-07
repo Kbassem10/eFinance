@@ -14,71 +14,19 @@ namespace StudentRegistrationPortal.Api.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IJwtTokenService _jwtTokenService;
     private readonly ILogger<AdminController> _logger;
 
     public AdminController(
         IUnitOfWork unitOfWork,
-        IJwtTokenService jwtTokenService,
         ILogger<AdminController> logger)
     {
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-        _jwtTokenService = jwtTokenService ?? throw new ArgumentNullException(nameof(jwtTokenService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
-
-    [HttpPost("login")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(AdminLoginResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Login([FromBody] LoginRequestDto dto, CancellationToken cancellationToken)
-    {
-        if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
-        {
-            return BadRequest(new { message = "Email and password are required." });
-        }
-
-        var user = await _unitOfWork.Admin.GetByEmailAsync(dto.Email, cancellationToken);
-        if (user == null || !BCrypt.Net.BCrypt.EnhancedVerify(dto.Password, user.PasswordHash))
-        {
-            return Unauthorized(new { message = "Invalid email or password." });
-        }
-
-        var roleIds = await _unitOfWork.Admin.GetUserRoleIdsAsync(user.UserId, cancellationToken);
-        if (!roleIds.Contains(1))
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Access denied: User does not have Admin permissions (RoleId 1)." });
-        }
-
-        var userRoles = await _unitOfWork.Admin.GetUserRolesAsync(user.UserId, cancellationToken);
-        var roleNames = userRoles.Select(r => r.RoleName).ToList();
-
-        var token = _jwtTokenService.GenerateToken(user, "Admin");
-        var expiresAt = DateTime.UtcNow.AddMinutes(120);
-
-        var adminDto = new AdminDetailsDto
-        {
-            UserId = user.UserId,
-            Email = user.Email,
-            IsActive = user.IsActive,
-            Roles = roleNames,
-            CreatedAt = user.CreatedAt,
-            UpdatedAt = user.UpdatedAt
-        };
-
-        return Ok(new AdminLoginResponseDto(
-            Token: token,
-            TokenType: "Bearer",
-            ExpiresAt: expiresAt,
-            Admin: adminDto
-        ));
     }
 
     [HttpGet("me")]
     [Authorize(Roles = "Admin")]
-    [ProducesResponseType(typeof(AdminDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(UserDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -90,45 +38,38 @@ public class AdminController : ControllerBase
             return Unauthorized(new { message = "Invalid token claims." });
         }
 
-        var user = await _unitOfWork.Admin.GetByIdAsync(currentUserId, cancellationToken);
+        var user = await _unitOfWork.Auth.GetUserDetailsByIdAsync(currentUserId, cancellationToken);
         if (user == null)
         {
             return NotFound(new { message = "Admin user not found." });
         }
 
-        var userRoles = await _unitOfWork.Admin.GetUserRolesAsync(user.UserId, cancellationToken);
-        var adminDto = new AdminDetailsDto
-        {
-            UserId = user.UserId,
-            Email = user.Email,
-            IsActive = user.IsActive,
-            Roles = userRoles.Select(r => r.RoleName).ToList(),
-            CreatedAt = user.CreatedAt,
-            UpdatedAt = user.UpdatedAt
-        };
-
-        return Ok(adminDto);
+        return Ok(user);
     }
 
     [HttpGet("users")]
     [Authorize(Roles = "Admin")]
-    [ProducesResponseType(typeof(IReadOnlyList<AdminDetailsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<UserDetailsDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllUsers(CancellationToken cancellationToken)
     {
         var users = await _unitOfWork.Admin.GetAllUsersAsync(cancellationToken);
-        var result = new List<AdminDetailsDto>();
+        var result = new List<UserDetailsDto>();
 
         foreach (var user in users)
         {
-            var userRoles = await _unitOfWork.Admin.GetUserRolesAsync(user.UserId, cancellationToken);
-            result.Add(new AdminDetailsDto
+            var userRoles = await _unitOfWork.Auth.GetUserRolesAsync(user.UserId, cancellationToken);
+            var student = await _unitOfWork.Auth.GetStudentByUserIdAsync(user.UserId, cancellationToken);
+            result.Add(new UserDetailsDto
             {
                 UserId = user.UserId,
                 Email = user.Email,
                 IsActive = user.IsActive,
                 Roles = userRoles.Select(r => r.RoleName).ToList(),
+                StudentId = student?.StudentId,
+                StudentNumber = student?.StudentNumber,
+                FullName = student?.FullName,
                 CreatedAt = user.CreatedAt,
                 UpdatedAt = user.UpdatedAt
             });
@@ -197,11 +138,11 @@ public class AdminController : ControllerBase
 
     [HttpGet("users/{userId:int}")]
     [Authorize(Roles = "Admin")]
-    [ProducesResponseType(typeof(AdminDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(UserDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUserById([FromRoute] int userId, CancellationToken cancellationToken)
     {
-        var user = await _unitOfWork.Admin.GetUserDetailsByIdAsync(userId, cancellationToken);
+        var user = await _unitOfWork.Auth.GetUserDetailsByIdAsync(userId, cancellationToken);
         if (user == null)
         {
             return NotFound(new { message = $"User with ID {userId} was not found." });

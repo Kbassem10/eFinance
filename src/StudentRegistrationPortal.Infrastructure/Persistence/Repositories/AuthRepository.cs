@@ -1,22 +1,22 @@
-using StudentRegistrationPortal.Application.Common.Interfaces;
 using System.Data;
 using Microsoft.Extensions.Logging;
 using MySqlConnector;
+using StudentRegistrationPortal.Application.Common.Interfaces;
 using StudentRegistrationPortal.Application.DTOs;
 using StudentRegistrationPortal.Domain.Entities;
 
 namespace StudentRegistrationPortal.Infrastructure.Persistence.Repositories;
 
-public class UserRepository : IUserRepository
+public class AuthRepository : IAuthRepository
 {
     private readonly Func<Task<MySqlConnection>> _connectionProvider;
     private readonly Func<MySqlTransaction?> _transactionProvider;
-    private readonly ILogger<UserRepository> _logger;
+    private readonly ILogger<AuthRepository> _logger;
 
-    public UserRepository(
+    public AuthRepository(
         Func<Task<MySqlConnection>> connectionProvider,
         Func<MySqlTransaction?> transactionProvider,
-        ILogger<UserRepository> logger)
+        ILogger<AuthRepository> logger)
     {
         _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
         _transactionProvider = transactionProvider ?? throw new ArgumentNullException(nameof(transactionProvider));
@@ -36,7 +36,7 @@ public class UserRepository : IUserRepository
         return command;
     }
 
-    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    public async Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
 
@@ -69,12 +69,12 @@ public class UserRepository : IUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving user by email '{Email}'", email);
+            _logger.LogError(ex, "Error retrieving user by email '{Email}' in AuthRepository", email);
             throw;
         }
     }
 
-    public async Task<User?> GetByIdAsync(int userId, CancellationToken cancellationToken = default)
+    public async Task<User?> GetUserByIdAsync(int userId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -105,55 +105,7 @@ public class UserRepository : IUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving user by ID {UserId}", userId);
-            throw;
-        }
-    }
-
-    public async Task<int> CreateAsync(string email, string passwordHash, CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(email);
-        ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
-
-        try
-        {
-            const string sql = @"
-                INSERT INTO Users (Email, PasswordHash, IsActive, CreatedAt, UpdatedAt)
-                VALUES (@Email, @PasswordHash, 1, UTC_TIMESTAMP(), UTC_TIMESTAMP());
-                SELECT LAST_INSERT_ID();";
-
-            await using var command = await CreateCommandAsync(sql);
-            command.Parameters.AddWithValue("@Email", email.Trim().ToLowerInvariant());
-            command.Parameters.AddWithValue("@PasswordHash", passwordHash);
-
-            var result = await command.ExecuteScalarAsync(cancellationToken);
-            return Convert.ToInt32(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating user with email '{Email}'", email);
-            throw;
-        }
-    }
-
-    public async Task AssignRoleAsync(int userId, int roleId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            const string sql = @"
-                INSERT INTO UserRoles (UserId, RoleId, AssignedAt)
-                VALUES (@UserId, @RoleId, UTC_TIMESTAMP())
-                ON DUPLICATE KEY UPDATE AssignedAt = AssignedAt;";
-
-            await using var command = await CreateCommandAsync(sql);
-            command.Parameters.AddWithValue("@UserId", userId);
-            command.Parameters.AddWithValue("@RoleId", roleId);
-
-            await command.ExecuteNonQueryAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error assigning role ID {RoleId} to user ID {UserId}", roleId, userId);
+            _logger.LogError(ex, "Error retrieving user by ID {UserId} in AuthRepository", userId);
             throw;
         }
     }
@@ -186,7 +138,7 @@ public class UserRepository : IUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving roles for user ID {UserId}", userId);
+            _logger.LogError(ex, "Error retrieving roles for user ID {UserId} in AuthRepository", userId);
             throw;
         }
     }
@@ -211,42 +163,107 @@ public class UserRepository : IUserRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving role IDs for user ID {UserId}", userId);
+            _logger.LogError(ex, "Error retrieving role IDs for user ID {UserId} in AuthRepository", userId);
             throw;
         }
     }
 
-    public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<StudentDetailsDto?> GetStudentByUserIdAsync(int userId, CancellationToken cancellationToken = default)
     {
-        var list = new List<User>();
         try
         {
             const string sql = @"
-                SELECT UserId, Email, PasswordHash, IsActive, CreatedAt, UpdatedAt
-                FROM Users
-                ORDER BY UserId ASC;";
+                SELECT 
+                    s.StudentId, s.StudentNumber, s.FirstName, s.MiddleName, s.LastName,
+                    s.NationalId, s.DateOfBirth, s.Gender, s.PhoneNumber, s.Address,
+                    s.AdmissionDate, s.AcademicLevel, s.GPA, s.CompletedCreditHours,
+                    s.DepartmentId, d.DepartmentName, d.DepartmentCode,
+                    s.StudentStatusId, ss.StatusName,
+                    u.Email, s.CreatedAt, s.UpdatedAt
+                FROM Students s
+                INNER JOIN Users u ON s.UserId = u.UserId
+                LEFT JOIN Departments d ON s.DepartmentId = d.DepartmentId
+                LEFT JOIN StudentStatuses ss ON s.StudentStatusId = ss.StudentStatusId
+                WHERE s.UserId = @UserId
+                LIMIT 1;";
 
             await using var command = await CreateCommandAsync(sql);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            command.Parameters.AddWithValue("@UserId", userId);
 
-            while (await reader.ReadAsync(cancellationToken))
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
             {
-                list.Add(new User
+                var firstName = reader.GetString("FirstName");
+                var middleName = reader.IsDBNull(reader.GetOrdinal("MiddleName")) ? null : reader.GetString("MiddleName");
+                var lastName = reader.GetString("LastName");
+                var fullName = string.IsNullOrWhiteSpace(middleName)
+                    ? $"{firstName} {lastName}"
+                    : $"{firstName} {middleName} {lastName}";
+
+                return new StudentDetailsDto
                 {
-                    UserId = reader.GetInt32("UserId"),
+                    StudentId = reader.GetInt32("StudentId"),
+                    StudentNumber = reader.GetString("StudentNumber"),
+                    FirstName = firstName,
+                    MiddleName = middleName,
+                    LastName = lastName,
+                    FullName = fullName,
                     Email = reader.GetString("Email"),
-                    PasswordHash = reader.GetString("PasswordHash"),
-                    IsActive = reader.GetBoolean("IsActive"),
+                    NationalId = reader.IsDBNull(reader.GetOrdinal("NationalId")) ? null : reader.GetString("NationalId"),
+                    DateOfBirth = DateOnly.FromDateTime(reader.GetDateTime("DateOfBirth")),
+                    Gender = reader.IsDBNull(reader.GetOrdinal("Gender")) ? null : reader.GetString("Gender"),
+                    PhoneNumber = reader.IsDBNull(reader.GetOrdinal("PhoneNumber")) ? null : reader.GetString("PhoneNumber"),
+                    Address = reader.IsDBNull(reader.GetOrdinal("Address")) ? null : reader.GetString("Address"),
+                    AdmissionDate = DateOnly.FromDateTime(reader.GetDateTime("AdmissionDate")),
+                    AcademicLevel = reader.GetInt32("AcademicLevel"),
+                    GPA = reader.GetDecimal("GPA"),
+                    CompletedCreditHours = reader.GetInt32("CompletedCreditHours"),
+                    DepartmentId = reader.GetInt32("DepartmentId"),
+                    DepartmentName = reader.IsDBNull(reader.GetOrdinal("DepartmentName")) ? string.Empty : reader.GetString("DepartmentName"),
+                    DepartmentCode = reader.IsDBNull(reader.GetOrdinal("DepartmentCode")) ? string.Empty : reader.GetString("DepartmentCode"),
+                    StudentStatusId = reader.GetInt32("StudentStatusId"),
+                    StatusName = reader.IsDBNull(reader.GetOrdinal("StatusName")) ? string.Empty : reader.GetString("StatusName"),
                     CreatedAt = reader.GetDateTime("CreatedAt"),
                     UpdatedAt = reader.GetDateTime("UpdatedAt")
-                });
+                };
             }
 
-            return list;
+            return null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving all users");
+            _logger.LogError(ex, "Error retrieving student by user ID {UserId} in AuthRepository", userId);
+            throw;
+        }
+    }
+
+    public async Task<UserDetailsDto?> GetUserDetailsByIdAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = await GetUserByIdAsync(userId, cancellationToken);
+            if (user == null) return null;
+
+            var roles = await GetUserRolesAsync(userId, cancellationToken);
+            var roleNames = roles.Select(r => r.RoleName).ToList();
+            var student = await GetStudentByUserIdAsync(userId, cancellationToken);
+
+            return new UserDetailsDto
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                IsActive = user.IsActive,
+                Roles = roleNames,
+                StudentId = student?.StudentId,
+                StudentNumber = student?.StudentNumber,
+                FullName = student?.FullName,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving user details for ID {UserId} in AuthRepository", userId);
             throw;
         }
     }

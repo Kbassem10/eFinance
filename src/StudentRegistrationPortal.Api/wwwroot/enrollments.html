@@ -133,7 +133,7 @@
         options.headers['X-Api-Version'] = API_VERSION;
         options.headers['Content-Type'] = 'application/json';
 
-        const token = localStorage.getItem('jwt_token');
+        const token = localStorage.getItem('jwt_token') || localStorage.getItem('admin_jwt_token');
         if (token) {
             options.headers['Authorization'] = `Bearer ${token}`;
         }
@@ -162,7 +162,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
-        const token = localStorage.getItem('jwt_token');
+        const token = localStorage.getItem('jwt_token') || localStorage.getItem('admin_jwt_token');
         if (!token) {
             window.location.replace('login.html');
             return;
@@ -356,6 +356,8 @@
 
     function logout() {
         localStorage.removeItem('jwt_token');
+        localStorage.removeItem('admin_jwt_token');
+        localStorage.removeItem('user_info');
         window.location.replace('login.html');
     }
 

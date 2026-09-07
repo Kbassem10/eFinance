@@ -14,16 +14,13 @@ namespace StudentRegistrationPortal.Api.Controllers;
 public class StudentsController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IJwtTokenService _jwtTokenService;
     private readonly ILogger<StudentsController> _logger;
 
     public StudentsController(
         IUnitOfWork unitOfWork,
-        IJwtTokenService jwtTokenService,
         ILogger<StudentsController> logger)
     {
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-        _jwtTokenService = jwtTokenService ?? throw new ArgumentNullException(nameof(jwtTokenService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
     
@@ -286,47 +283,5 @@ public class StudentsController : ControllerBase
     {
         int hours = await _unitOfWork.Students.GetTotalCreditHoursAsync(id, semesterId);
         return Ok(new { studentId = id, semesterId = semesterId, totalCreditHours = hours });
-    }
-
-    [HttpPost("login")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Login([FromBody] LoginRequestDto dto, CancellationToken cancellationToken)
-    {
-        if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
-        {
-            return BadRequest(new { message = "Email and password are required." });
-        }
-
-        var user = await _unitOfWork.Users.GetByEmailAsync(dto.Email, cancellationToken);
-        if (user == null || !BCrypt.Net.BCrypt.EnhancedVerify(dto.Password, user.PasswordHash))
-        {
-            return Unauthorized(new { message = "Invalid email or password." });
-        }
-
-        var roleIds = await _unitOfWork.Users.GetUserRoleIdsAsync(user.UserId, cancellationToken);
-        if (!roleIds.Contains(3) && !roleIds.Contains(2))
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Access denied. User does not have Student permissions (RoleId 3)." });
-        }
-
-        var student = await _unitOfWork.Students.GetByUserIdAsync(user.UserId, cancellationToken);
-        if (student == null)
-        {
-            return NotFound(new { message = "Student record not found for the authenticated user." });
-        }
-
-        var token = _jwtTokenService.GenerateToken(user, "Student", student.StudentId);
-        var expiresAt = DateTime.UtcNow.AddMinutes(120);
-
-        return Ok(new LoginResponseDto(
-            Token: token,
-            TokenType: "Bearer",
-            ExpiresAt: expiresAt,
-            Student: student
-        ));
     }
 }
