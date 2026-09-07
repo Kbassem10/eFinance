@@ -46,7 +46,7 @@ public class LookupRepository : ILookupRepository
             {
                 list.Add(new LookupItemDto(
                     r.GetInt32("DepartmentId"),
-                    $"{r.GetString("DepartmentName")} ({r.GetString("DepartmentCode")})"
+                    $"{r.GetString("DepartmentName")}"
                 ));
             }
             return list;
