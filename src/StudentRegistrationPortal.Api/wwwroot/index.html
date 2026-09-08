@@ -78,10 +78,15 @@
             </div>
             <div class="card-body bg-light border-bottom p-2">
                 <div class="row g-2 align-items-center">
-                    <div class="col-md-6 col-12">
-                        <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search course code, name, status...">
+                    <div class="col-md-4 col-12">
+                        <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search course code, name, status, department...">
                     </div>
-                    <div class="col-md-6 col-12 d-flex justify-content-md-end gap-1">
+                    <div class="col-md-3 col-6">
+                        <select id="departmentFilter" class="form-select form-select-sm">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5 col-12 d-flex justify-content-md-end gap-1">
                         <button class="btn btn-sm btn-outline-primary filter-tab active" data-status="ALL">All</button>
                         <button class="btn btn-sm btn-outline-warning filter-tab" data-status="Pending">Pending</button>
                         <button class="btn btn-sm btn-outline-success filter-tab" data-status="Registered">Registered</button>
@@ -164,16 +169,33 @@
         if (!token) return window.location.replace('login.html');
         modalInst = new bootstrap.Modal(document.getElementById('courseModal'));
         try {
-            const student = await api(`${API}/me`);
+            const [student, catalog, departments, userRequests] = await Promise.all([
+                api(`${API}/me`),
+                api('/api/courses') || [],
+                api('/api/lookups/departments') || [],
+                api(`${API}/me/enrollments`) || []
+            ]);
+
             document.getElementById('userName').textContent = `${student.firstName || ''} ${student.lastName || ''}`.trim();
             document.getElementById('profileStudentId').textContent = student.studentId || '-';
             document.getElementById('profileStudentNumber').textContent = student.studentNumber || '-';
             document.getElementById('profileDept').textContent = student.departmentName || '-';
-            
-            const catalog = await api('/api/courses') || [];
+
             catalog.forEach(c => c && coursesMap.set(c.courseId, c));
-            
-            requests = await api(`${API}/me/enrollments`) || [];
+            requests = userRequests;
+
+            const deptSel = document.getElementById('departmentFilter');
+            if (deptSel && departments.length) {
+                deptSel.innerHTML = '<option value="">All Departments</option>';
+                departments.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.name;
+                    opt.textContent = d.name;
+                    deptSel.appendChild(opt);
+                });
+            }
+
+            deptSel?.addEventListener('change', render);
             render();
         } catch (err) {
             localStorage.clear();
@@ -197,19 +219,24 @@
         document.getElementById('statCredits').textContent = `${credits} hrs`;
 
         const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+        const deptFilter = (document.getElementById('departmentFilter')?.value || '').toLowerCase().trim();
         const tbody = document.getElementById('requestsTableBody');
         
         const filtered = requests.filter(r => {
             const st = (r.status || r.statusName || 'Pending').toLowerCase().trim();
-            const code = (r.courseCode || coursesMap.get(r.courseId)?.courseCode || '').toLowerCase();
-            const title = (r.courseName || r.courseTitle || coursesMap.get(r.courseId)?.courseName || '').toLowerCase();
+            const c = coursesMap.get(r.courseId);
+            const code = (r.courseCode || c?.courseCode || '').toLowerCase();
+            const title = (r.courseName || r.courseTitle || c?.courseName || '').toLowerCase();
+            const dept = (c?.assignedDepartments || c?.departmentName || c?.departmentCode || '').toLowerCase();
             
             let matchSt = activeFilter === 'ALL' ||
                 (activeFilter === 'Pending' && st === 'pending') ||
                 (activeFilter === 'Registered' && ['registered', 'enrolled', 'approved', 'active'].includes(st)) ||
                 (activeFilter === 'Other' && !['pending', 'registered', 'enrolled', 'approved', 'active'].includes(st));
-            let matchQ = !query || code.includes(query) || title.includes(query) || st.includes(query);
-            return matchSt && matchQ;
+
+            let matchDept = !deptFilter || dept.includes(deptFilter);
+            let matchQ = !query || code.includes(query) || title.includes(query) || st.includes(query) || dept.includes(query);
+            return matchSt && matchDept && matchQ;
         });
 
         tbody.innerHTML = filtered.length === 0 ? '<tr><td colspan="7" class="text-center text-muted py-3">No course requests found.</td></tr>' : '';

@@ -19,8 +19,15 @@ public static class DependencyInjection
         this IServiceCollection services, 
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
+        var rawConnectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
+
+        var builder = new MySqlConnectionStringBuilder(rawConnectionString)
+        {
+            AllowUserVariables = true,
+            UseAffectedRows = false
+        };
+        var connectionString = builder.ConnectionString;
 
         // 1. MySQL ADO.NET Data Source
         services.AddMySqlDataSource(connectionString);

@@ -77,14 +77,19 @@
             <!-- Organized Search Toolbar -->
             <div class="card-body bg-light border-bottom p-3">
                 <div class="row g-3 align-items-center">
-                    <div class="col-lg-8 col-md-12">
+                    <div class="col-lg-5 col-md-12">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
                             <input type="text" id="courseSearchInput" class="form-control" placeholder="Search by course code, title, instructor, or department...">
                             <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">Clear</button>
                         </div>
                     </div>
-                    <div class="col-lg-4 col-md-12">
+                    <div class="col-lg-4 col-md-6">
+                        <select id="departmentFilter" class="form-select form-select-sm">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
                         <select id="levelFilter" class="form-select form-select-sm">
                             <option value="">All Difficulty Levels</option>
                             <option value="Beginner">Beginner</option>
@@ -366,7 +371,19 @@
                 apiRequest('/api/lookups/course-statuses', { method: 'GET' })
             ]);
 
-            if (departments?.length) populateSelect('departmentId', departments);
+            if (departments?.length) {
+                populateSelect('departmentId', departments);
+                const filterSel = document.getElementById('departmentFilter');
+                if (filterSel) {
+                    filterSel.innerHTML = '<option value="">All Departments</option>';
+                    departments.forEach(dept => {
+                        const opt = document.createElement('option');
+                        opt.value = dept.name;
+                        opt.textContent = dept.name;
+                        filterSel.appendChild(opt);
+                    });
+                }
+            }
             if (semesters?.length) populateSelect('semesterId', semesters);
             if (instructors?.length) populateSelect('instructorId', instructors);
             if (rooms?.length) populateSelect('roomId', rooms);
@@ -405,8 +422,17 @@
         const tbody = document.getElementById('coursesTableBody');
         const searchTerm = (document.getElementById('courseSearchInput')?.value || '').trim().toLowerCase();
         const levelFilter = document.getElementById('levelFilter')?.value || '';
+        const deptFilter = document.getElementById('departmentFilter')?.value || '';
 
         let filtered = allCourses;
+
+        if (deptFilter) {
+            filtered = filtered.filter(c => 
+                (c.assignedDepartments && c.assignedDepartments.toLowerCase().includes(deptFilter.toLowerCase())) ||
+                (c.departmentName && c.departmentName.toLowerCase().includes(deptFilter.toLowerCase())) ||
+                (c.departmentCode && c.departmentCode.toLowerCase().includes(deptFilter.toLowerCase()))
+            );
+        }
 
         if (levelFilter) {
             filtered = filtered.filter(c => c.difficultyLevel && c.difficultyLevel.toLowerCase() === levelFilter.toLowerCase());
@@ -439,7 +465,7 @@
                 <td><span class="badge bg-secondary-subtle text-secondary border">${c.difficultyLevel || 'N/A'}</span></td>
                 <td class="small text-muted">${c.instructorName || 'Faculty Assigned'}</td>
                 <td><span class="badge bg-${c.courseStatusId === 1 ? 'success' : 'secondary'}">${c.statusName || 'Active'}</span></td>
-                <td class="small text-muted">${c.assignedDepartments || 'General'}</td>
+                <td><span class="badge bg-light text-primary border">${c.assignedDepartments || 'General'}</span></td>
                 <td class="text-end pe-3">
                     <div class="btn-group btn-group-sm" role="group">
                         <button class="btn btn-outline-primary" onclick="openEditCourse(${c.courseId}, '${c.courseCode}', '${(c.courseName || '').replace(/'/g, "\\'")}', ${c.creditHours}, '${c.difficultyLevel || 'Undergraduate'}', ${c.courseStatusId || 1})">
@@ -456,9 +482,11 @@
     }
 
     document.getElementById('courseSearchInput')?.addEventListener('input', renderCoursesTable);
+    document.getElementById('departmentFilter')?.addEventListener('change', renderCoursesTable);
     document.getElementById('levelFilter')?.addEventListener('change', renderCoursesTable);
     document.getElementById('clearSearchBtn')?.addEventListener('click', () => {
         document.getElementById('courseSearchInput').value = '';
+        document.getElementById('departmentFilter').value = '';
         document.getElementById('levelFilter').value = '';
         renderCoursesTable();
     });

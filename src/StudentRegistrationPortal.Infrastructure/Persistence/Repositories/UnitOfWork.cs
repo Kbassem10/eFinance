@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using MySqlConnector;
 using StudentRegistrationPortal.Application.Common.Interfaces;
+using StudentRegistrationPortal.Infrastructure.Persistence.DbContext;
 
 namespace StudentRegistrationPortal.Infrastructure.Persistence.Repositories;
 
@@ -8,6 +9,7 @@ namespace StudentRegistrationPortal.Infrastructure.Persistence.Repositories;
 public class UnitOfWork : IUnitOfWork
 {
     private readonly MySqlDataSource _dataSource;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILoggerFactory _loggerFactory;
     private MySqlConnection? _connection;
     private MySqlTransaction? _transaction;
@@ -19,9 +21,10 @@ public class UnitOfWork : IUnitOfWork
     private IAuthRepository? _auth;
     private bool _disposed;
 
-    public UnitOfWork(MySqlDataSource dataSource, ILoggerFactory loggerFactory)
+    public UnitOfWork(MySqlDataSource dataSource, ApplicationDbContext dbContext, ILoggerFactory loggerFactory)
     {
         _dataSource = dataSource ?? throw new ArgumentNullException(nameof(dataSource));
+        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
     }
 
@@ -73,6 +76,7 @@ public class UnitOfWork : IUnitOfWork
                 return _connection;
             },
             transactionProvider: () => _transaction,
+            _dbContext,
             _loggerFactory.CreateLogger<LookupRepository>());
 
     public IAuthRepository Auth =>

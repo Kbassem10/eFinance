@@ -1,7 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MySqlConnector;
 using StudentRegistrationPortal.Application.Common.Interfaces;
 using StudentRegistrationPortal.Application.DTOs;
+using StudentRegistrationPortal.Domain.Entities;
+using StudentRegistrationPortal.Infrastructure.Persistence.DbContext;
 
 namespace StudentRegistrationPortal.Infrastructure.Persistence.Repositories;
 
@@ -9,15 +12,18 @@ public class LookupRepository : ILookupRepository
 {
     private readonly Func<Task<MySqlConnection>> _connectionProvider;
     private readonly Func<MySqlTransaction?> _transactionProvider;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<LookupRepository> _logger;
 
     public LookupRepository(
         Func<Task<MySqlConnection>> connectionProvider,
         Func<MySqlTransaction?> transactionProvider,
+        ApplicationDbContext dbContext,
         ILogger<LookupRepository> logger)
     {
         _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
         _transactionProvider = transactionProvider ?? throw new ArgumentNullException(nameof(transactionProvider));
+        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -34,22 +40,25 @@ public class LookupRepository : ILookupRepository
         return command;
     }
 
-    public async Task<IReadOnlyList<LookupItemDto>> GetDepartmentsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<LookupItemDto>> GetDepartmentsAsync(string departmentCode = "", CancellationToken cancellationToken = default)
     {
         try
         {
-            var list = new List<LookupItemDto>();
-            const string sql = "SELECT DepartmentId, DepartmentName, DepartmentCode FROM Departments ORDER BY DepartmentName ASC;";
-            await using var cmd = await CreateCommandAsync(sql);
-            await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
-            while (await r.ReadAsync(cancellationToken))
+            IQueryable<Department> query = _dbContext.Departments.AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(departmentCode) && !departmentCode.Equals("ALL", StringComparison.OrdinalIgnoreCase))
             {
-                list.Add(new LookupItemDto(
-                    r.GetInt32("DepartmentId"),
-                    $"{r.GetString("DepartmentName")}"
-                ));
+                var filter = departmentCode.Trim();
+                query = query.Where(d => d.DepartmentCode == filter || d.DepartmentName == filter || EF.Functions.Like(d.DepartmentName, $"%{filter}%"));
             }
-            return list;
+
+            return await query
+                .OrderBy(d => d.DepartmentName)
+                .Select(d => new LookupItemDto(
+                    d.DepartmentId,
+                    d.DepartmentName
+                ))
+                .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -157,67 +166,71 @@ public class LookupRepository : ILookupRepository
 
     public async Task<IReadOnlyList<DepartmentDetailsDto>> GetAllDepartmentsAsync(CancellationToken cancellationToken = default)
     {
-        var list = new List<DepartmentDetailsDto>();
-        const string sql = "SELECT DepartmentId, DepartmentCode, DepartmentName, CreatedAt FROM Departments ORDER BY DepartmentName ASC;";
-        await using var cmd = await CreateCommandAsync(sql);
-        await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
-        while (await r.ReadAsync(cancellationToken))
-        {
-            list.Add(new DepartmentDetailsDto(
-                r.GetInt32("DepartmentId"),
-                r.GetString("DepartmentCode"),
-                r.GetString("DepartmentName"),
-                r.GetDateTime("CreatedAt")
-            ));
-        }
-        return list;
+        return await _dbContext.Departments
+            .AsNoTracking()
+            .OrderBy(d => d.DepartmentName)
+            .Select(d => new DepartmentDetailsDto(
+                d.DepartmentId,
+                d.DepartmentCode,
+                d.DepartmentName,
+                d.CreatedAt
+            ))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<DepartmentDetailsDto?> GetDepartmentByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        const string sql = "SELECT DepartmentId, DepartmentCode, DepartmentName, CreatedAt FROM Departments WHERE DepartmentId = @id;";
-        await using var cmd = await CreateCommandAsync(sql);
-        cmd.Parameters.AddWithValue("@id", id);
-        await using var r = await cmd.ExecuteReaderAsync(cancellationToken);
-        if (await r.ReadAsync(cancellationToken))
-        {
-            return new DepartmentDetailsDto(
-                r.GetInt32("DepartmentId"),
-                r.GetString("DepartmentCode"),
-                r.GetString("DepartmentName"),
-                r.GetDateTime("CreatedAt")
-            );
-        }
-        return null;
+        return await _dbContext.Departments
+            .AsNoTracking()
+            .Where(d => d.DepartmentId == id)
+            .Select(d => new DepartmentDetailsDto(
+                d.DepartmentId,
+                d.DepartmentCode,
+                d.DepartmentName,
+                d.CreatedAt
+            ))
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<int> CreateDepartmentAsync(CreateUpdateDepartmentDto dto, CancellationToken cancellationToken = default)
     {
-        const string sql = "INSERT INTO Departments (DepartmentCode, DepartmentName) VALUES (@code, @name); SELECT LAST_INSERT_ID();";
-        await using var cmd = await CreateCommandAsync(sql);
-        cmd.Parameters.AddWithValue("@code", dto.DepartmentCode);
-        cmd.Parameters.AddWithValue("@name", dto.DepartmentName);
-        var result = await cmd.ExecuteScalarAsync(cancellationToken);
-        return Convert.ToInt32(result);
+        var department = new Department
+        {
+            DepartmentCode = dto.DepartmentCode,
+            DepartmentName = dto.DepartmentName,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _dbContext.Departments.Add(department);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return department.DepartmentId;
     }
 
     public async Task<bool> UpdateDepartmentAsync(int id, CreateUpdateDepartmentDto dto, CancellationToken cancellationToken = default)
     {
-        const string sql = "UPDATE Departments SET DepartmentCode = @code, DepartmentName = @name WHERE DepartmentId = @id;";
-        await using var cmd = await CreateCommandAsync(sql);
-        cmd.Parameters.AddWithValue("@id", id);
-        cmd.Parameters.AddWithValue("@code", dto.DepartmentCode);
-        cmd.Parameters.AddWithValue("@name", dto.DepartmentName);
-        int rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        var department = await _dbContext.Departments
+            .FirstOrDefaultAsync(d => d.DepartmentId == id, cancellationToken);
+
+        if (department == null)
+            return false;
+
+        department.DepartmentCode = dto.DepartmentCode;
+        department.DepartmentName = dto.DepartmentName;
+
+        int rows = await _dbContext.SaveChangesAsync(cancellationToken);
         return rows > 0;
     }
 
     public async Task<bool> DeleteDepartmentAsync(int id, CancellationToken cancellationToken = default)
     {
-        const string sql = "DELETE FROM Departments WHERE DepartmentId = @id;";
-        await using var cmd = await CreateCommandAsync(sql);
-        cmd.Parameters.AddWithValue("@id", id);
-        int rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        var department = await _dbContext.Departments
+            .FirstOrDefaultAsync(d => d.DepartmentId == id, cancellationToken);
+
+        if (department == null)
+            return false;
+
+        _dbContext.Departments.Remove(department);
+        int rows = await _dbContext.SaveChangesAsync(cancellationToken);
         return rows > 0;
     }
 

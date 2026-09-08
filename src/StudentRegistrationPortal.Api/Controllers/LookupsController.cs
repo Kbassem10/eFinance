@@ -23,9 +23,9 @@ public class LookupsController : ControllerBase
     [HttpGet("departments")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<LookupItemDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetDepartments(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetDepartments([FromQuery] string departmentCode = "", CancellationToken cancellationToken = default)
     {
-        var result = await _unitOfWork.Lookups.GetDepartmentsAsync(cancellationToken);
+        var result = await _unitOfWork.Lookups.GetDepartmentsAsync(departmentCode, cancellationToken);
         return Ok(result);
     }
 

@@ -46,12 +46,20 @@
                 <h5 class="mb-0 fw-bold"><i class="bi bi-journal-plus me-2"></i>Course Registration</h5>
             </div>
             <div class="card-body p-4">
-                <label for="courseSelect" class="form-label fw-semibold">Select Course(s) to Add:</label>
-                <div class="mb-4">
-                    <select class="form-select form-select-lg" id="courseSelect" multiple placeholder="Type to search courses..."></select>
-                    <div class="form-text text-muted mt-2">
-                        <i class="bi bi-info-circle text-primary me-1"></i>Click the <strong class="text-primary"><i class="bi bi-arrow-left-circle-fill"></i> Details</strong> icon beside any course to preview prerequisites and schedules before adding.
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label for="departmentFilter" class="form-label fw-semibold">Filter by Department:</label>
+                        <select id="departmentFilter" class="form-select form-select-lg">
+                            <option value="">All Departments</option>
+                        </select>
                     </div>
+                    <div class="col-md-8">
+                        <label for="courseSelect" class="form-label fw-semibold">Select Course(s) to Add:</label>
+                        <select class="form-select form-select-lg" id="courseSelect" multiple placeholder="Type to search courses..."></select>
+                    </div>
+                </div>
+                <div class="form-text text-muted mb-3">
+                    <i class="bi bi-info-circle text-primary me-1"></i>Click the <strong class="text-primary"><i class="bi bi-arrow-left-circle-fill"></i> Details</strong> icon beside any course to preview prerequisites and schedules before adding.
                 </div>
 
                 <!-- Selected Pending Courses Table -->
@@ -144,19 +152,60 @@
         modalInst = new bootstrap.Modal(document.getElementById('courseModal'));
 
         try {
-            const student = await api(`${API}/me`);
+            const [student, courses, departments] = await Promise.all([
+                api(`${API}/me`),
+                api('/api/courses') || [],
+                api('/api/lookups/departments') || []
+            ]);
+
             document.getElementById('userName').textContent = `${student.firstName || ''} ${student.lastName || ''}`.trim();
             document.getElementById('profileStudentId').textContent = student.studentId || '-';
             document.getElementById('profileStudentNumber').textContent = student.studentNumber || '-';
             document.getElementById('profileDept').textContent = student.departmentName || '-';
 
-            const courses = await api('/api/courses') || [];
+            const deptSel = document.getElementById('departmentFilter');
+            if (deptSel && departments.length) {
+                deptSel.innerHTML = '<option value="">All Departments</option>';
+                departments.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.name;
+                    opt.textContent = d.name;
+                    deptSel.appendChild(opt);
+                });
+            }
+
+            allRawCourses = courses;
             initTS(courses);
+
+            deptSel?.addEventListener('change', () => {
+                const selectedDept = deptSel.value.toLowerCase();
+                const filteredCourses = selectedDept
+                    ? allRawCourses.filter(c => (c.assignedDepartments || c.departmentName || c.departmentCode || '').toLowerCase().includes(selectedDept))
+                    : allRawCourses;
+                
+                if (ts) {
+                    ts.clear();
+                    ts.clearOptions();
+                    filteredCourses.forEach(c => {
+                        ts.addOption({
+                            courseId: String(c.courseId),
+                            courseCode: c.courseCode || '',
+                            courseName: c.courseName || '',
+                            creditHours: c.creditHours || 0,
+                            instructorName: c.instructorName || 'Faculty',
+                            assignedDepartments: c.assignedDepartments || '',
+                            displayText: `${c.courseCode} - ${c.courseName}`
+                        });
+                    });
+                }
+            });
         } catch (e) {
             localStorage.clear();
             window.location.replace('login.html');
         }
     });
+
+    let allRawCourses = [];
 
     function initTS(courses) {
         catalogMap.clear();
@@ -168,6 +217,7 @@
                 courseName: c.courseName || '',
                 creditHours: c.creditHours || 0,
                 instructorName: c.instructorName || 'Faculty',
+                assignedDepartments: c.assignedDepartments || '',
                 displayText: `${c.courseCode} - ${c.courseName}`
             };
         });
@@ -177,7 +227,7 @@
             options: options,
             valueField: 'courseId',
             labelField: 'displayText',
-            searchField: ['courseCode', 'courseName', 'instructorName'],
+            searchField: ['courseCode', 'courseName', 'instructorName', 'assignedDepartments'],
             render: {
                 option: (d, esc) => `<div class="py-1 d-flex justify-content-between align-items-center">
                     <div>
