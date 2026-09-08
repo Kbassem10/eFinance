@@ -3,122 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Portal - Course Approvals & Requests</title>
+    <title>Admin Portal - Approvals & Requests Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <style>
-        body { background-color: #f4f6f9; min-height: 100vh; display: flex; flex-direction: column; }
-        .dashboard-card { max-width: 1150px; width: 100%; margin: 40px auto; border-radius: 12px; }
-        .btn-admin { background-color: #dc2626; border-color: #dc2626; color: #fff; }
-        .btn-admin:hover { background-color: #b91c1c; border-color: #b91c1c; color: #fff; }
-        .btn-outline-admin { color: #dc2626; border-color: #dc2626; }
-        .btn-outline-admin:hover { background-color: #dc2626; color: #fff; }
-        .table-responsive { border-radius: 8px; }
-    </style>
 </head>
-<body>
+<body class="bg-body-tertiary min-vh-100 py-4">
 
-<div class="container my-4">
-    <div id="alertBox" class="alert d-none mx-auto mb-3" style="max-width: 1150px;" role="alert"></div>
+<div class="container" style="max-width: 1150px;">
+    <div id="alertBox" class="alert d-none mb-3" role="alert"></div>
 
-    <div id="dashboardSection" class="card shadow-sm dashboard-card p-4 border-0">
-        <!-- Top Navigation Header -->
+    <div class="card shadow-sm border-0 p-4 rounded-3">
+        <!-- Navigation Header -->
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-3 gap-2">
             <div>
-                <span class="badge bg-danger text-uppercase me-1 px-2 py-1">Administrator</span>
-                <h4 class="mb-0 d-inline align-middle fw-bold">Welcome, <span id="adminProfileEmail" class="text-danger">Loading...</span></h4>
+                <span class="badge bg-danger text-uppercase me-1">Administrator</span>
+                <h4 class="mb-0 d-inline align-middle fw-bold">Welcome, <span id="adminEmail" class="text-danger">Loading...</span></h4>
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <a href="admin.html" class="btn btn-danger btn-sm active fw-semibold shadow-sm">
-                    Approvals & Requests
-                </a>
-                <a href="admin-courses.html" class="btn btn-outline-secondary btn-sm fw-semibold">
-                    Course Management
-                </a>
-                <a href="admin-students.html" class="btn btn-outline-secondary btn-sm fw-semibold">
-                    Students
-                </a>
-                <a href="admin-lookups.html" class="btn btn-outline-secondary btn-sm fw-semibold">
-                    Lookups Management
-                </a>
-                <button id="logoutBtn" class="btn btn-outline-danger btn-sm fw-semibold">
-                    Log Out
-                </button>
+                <a href="admin.html" class="btn btn-danger btn-sm active fw-semibold">Dashboard & Approvals</a>
+                <a href="admin-courses.html" class="btn btn-outline-secondary btn-sm fw-semibold">Course Management</a>
+                <a href="admin-students.html" class="btn btn-outline-secondary btn-sm fw-semibold">Students</a>
+                <a href="admin-lookups.html" class="btn btn-outline-secondary btn-sm fw-semibold">Lookups Management</a>
+                <button id="logoutBtn" class="btn btn-outline-danger btn-sm fw-semibold">Log Out</button>
             </div>
         </div>
 
-        <!-- Admin Profile Summary Bar -->
+        <!-- Admin Profile Bar -->
         <div class="card mb-4 bg-light border-0">
-            <div class="card-body py-3">
-                <div class="row g-2 small">
-                    <div class="col-md-3 col-6"><strong>User ID:</strong> <span id="adminProfileId">-</span></div>
-                    <div class="col-md-3 col-6"><strong>Email:</strong> <span id="adminProfileEmailText">-</span></div>
-                    <div class="col-md-3 col-6"><strong>Roles:</strong> <span id="adminRolesBadges"><span class="badge bg-danger">Admin</span></span></div>
-                    <div class="col-md-3 col-6"><strong>Status:</strong> <span id="adminStatusBadge" class="badge bg-success">Active</span></div>
+            <div class="card-body py-2 small">
+                <div class="row g-2">
+                    <div class="col-md-3 col-6"><strong>User ID:</strong> <span id="adminId">-</span></div>
+                    <div class="col-md-3 col-6"><strong>Email:</strong> <span id="adminEmailText">-</span></div>
+                    <div class="col-md-3 col-6"><strong>Roles:</strong> <span id="adminRoles"><span class="badge bg-danger">Admin</span></span></div>
+                    <div class="col-md-3 col-6"><strong>Status:</strong> <span id="adminStatus" class="badge bg-success">Active</span></div>
                 </div>
             </div>
         </div>
 
-        <!-- Course Requests & Approvals Section -->
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <div>
-                    <h5 class="mb-0 fw-bold text-dark">Course Enrollment Requests & Review</h5>
-                    <small class="text-muted">Review, approve, or decline student course registrations</small>
-                </div>
-                <div class="d-flex gap-2">
-                    <button id="refreshBtn" class="btn btn-outline-secondary btn-sm" title="Refresh Requests">
-                        <i class="bi bi-arrow-clockwise"></i> Refresh
-                    </button>
+        <!-- Metric Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="card bg-white p-3 text-center shadow-sm border-0 h-100" style="cursor:pointer" onclick="setFilter('5')">
+                    <div class="text-uppercase text-muted small fw-semibold">Pending Approvals</div>
+                    <div class="fs-3 fw-bold text-warning my-1" id="statPending">0</div>
                 </div>
             </div>
+            <div class="col-md-3 col-6">
+                <div class="card bg-white p-3 text-center shadow-sm border-0 h-100" style="cursor:pointer" onclick="setFilter('1')">
+                    <div class="text-uppercase text-muted small fw-semibold">Enrolled / Approved</div>
+                    <div class="fs-3 fw-bold text-success my-1" id="statEnrolled">0</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card stat-card bg-white p-3 text-center shadow-sm border-0 h-100" style="cursor:pointer" onclick="setFilter('3')">
+                    <div class="text-uppercase text-muted small fw-semibold">Dropped / Declined</div>
+                    <div class="fs-3 fw-bold text-danger my-1" id="statDeclined">0</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card bg-white p-3 text-center shadow-sm border-0 h-100" style="cursor:pointer" onclick="setFilter('')">
+                    <div class="text-uppercase text-muted small fw-semibold">Total Requests</div>
+                    <div class="fs-3 fw-bold text-primary my-1" id="statTotal">0</div>
+                </div>
+            </div>
+        </div>
 
-            <!-- Organized Filter & Action Toolbar -->
-            <div class="card-body bg-light border-bottom p-3">
-                <div class="row g-3 align-items-center">
-                    <div class="col-lg-6 col-md-12">
-                        <div class="btn-group btn-group-sm w-100" role="group" aria-label="Status Filters">
-                            <button type="button" class="btn btn-outline-secondary filter-btn active" data-status="">All Statuses</button>
-                            <button type="button" class="btn btn-outline-warning filter-btn text-dark" data-status="5">Pending Only <span id="pendingCountBadge" class="badge bg-warning text-dark border ms-1">0</span></button>
-                            <button type="button" class="btn btn-outline-success filter-btn" data-status="1">Enrolled (Approved)</button>
-                            <button type="button" class="btn btn-outline-danger filter-btn" data-status="3">Dropped (Declined)</button>
+        <!-- Course Requests Section -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">Course Enrollment Requests</h5>
+                <button id="refreshBtn" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+            </div>
+            <div class="card-body bg-light border-bottom p-2">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-6 col-12">
+                        <div class="btn-group btn-group-sm w-100">
+                            <button class="btn btn-outline-warning filter-btn text-dark active" data-status="5">Pending Only</button>
+                            <button class="btn btn-outline-success filter-btn" data-status="1">Approved</button>
+                            <button class="btn btn-outline-danger filter-btn" data-status="3">Declined</button>
+                            <button class="btn btn-outline-secondary filter-btn" data-status="">All</button>
                         </div>
                     </div>
-                    <div class="col-lg-6 col-md-12">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                            <input type="text" id="searchInput" class="form-control" placeholder="Search by student name, number, email, or course code...">
-                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">Clear</button>
-                        </div>
+                    <div class="col-md-6 col-12">
+                        <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search name, number, email, course...">
                     </div>
                 </div>
             </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Student</th>
+                            <th>Course</th>
+                            <th>Credits</th>
+                            <th>Submitted</th>
+                            <th>Status</th>
+                            <th class="text-end pe-3" style="width: 220px;">Review Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="enrollmentsBody">
+                        <tr><td colspan="7" class="text-center text-muted py-4">Loading enrollment requests...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
-            <!-- Enrollments Table -->
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width: 70px;">ID</th>
-                                <th>Student</th>
-                                <th>Course</th>
-                                <th>Credits</th>
-                                <th>Instructor</th>
-                                <th>Submitted</th>
-                                <th>Status</th>
-                                <th class="text-end pe-3" style="min-width: 180px;">Review Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="enrollmentsTableBody">
-                            <tr><td colspan="8" class="text-center text-muted py-4">Loading enrollment requests...</td></tr>
-                        </tbody>
-                    </table>
+<!-- Details Inspection Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="mTitle">Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="row g-2 mb-3">
+                    <div class="col-6"><strong>Student:</strong> <div id="mStudentName" class="fw-semibold">-</div></div>
+                    <div class="col-6"><strong>Student #:</strong> <div id="mStudentNum">-</div></div>
+                    <div class="col-12"><strong>Email:</strong> <div id="mStudentEmail" class="small text-muted">-</div></div>
+                </div>
+                <div class="border-top pt-2 mb-2">
+                    <div><strong>Course:</strong> <span id="mCourseInfo" class="fw-bold text-primary">-</span></div>
+                    <div><strong>Credits:</strong> <span id="mCourseCredits">-</span></div>
+                    <div><strong>Instructor:</strong> <span id="mInstructor">-</span></div>
+                </div>
+                <div class="border-top pt-2">
+                    <div><strong>Status:</strong> <span id="mStatus" class="badge bg-secondary">-</span></div>
+                    <div class="small text-muted mt-1" id="mSubDate">-</div>
                 </div>
             </div>
-            <div class="card-footer bg-white py-2 text-muted small d-flex justify-content-between align-items-center">
-                <span id="recordsCountText">Showing 0 records</span>
-                <span>Role Requirement: <strong>Admin (RoleId: 1)</strong></span>
+            <div class="modal-footer bg-light d-flex justify-content-between py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                <div id="mActions"></div>
             </div>
         </div>
     </div>
@@ -126,264 +145,166 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const API_BASE = '/api/admin';
-    const API_VERSION = '1.0';
-    let currentStatusFilter = '';
-    let allLoadedEnrollments = [];
+    const API = '/api/admin';
+    let enrollments = [], activeFilter = '5', modalInst = null;
 
-    async function apiRequest(url, options = {}) {
-        options.headers = options.headers || {};
-        options.headers['X-Api-Version'] = API_VERSION;
-        options.headers['Content-Type'] = 'application/json';
-
+    async function api(url, opts = {}) {
+        opts.headers = opts.headers || {};
+        opts.headers['X-Api-Version'] = '1.0';
+        opts.headers['Content-Type'] = 'application/json';
         const token = localStorage.getItem('jwt_token') || localStorage.getItem('admin_jwt_token');
-        if (token) {
-            options.headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(url, options);
-        const data = await response.json().catch(() => null);
-
-        if (response.status === 401 || response.status === 403) {
-            localStorage.removeItem('jwt_token');
-            localStorage.removeItem('admin_jwt_token');
-            localStorage.removeItem('user_info');
-            window.location.replace('login.html');
-            return null;
-        }
-
-        if (!response.ok) {
-            const errorMsg = data?.message || data?.detail || `Error (${response.status}): ${response.statusText}`;
-            throw new Error(errorMsg);
-        }
+        if (token) opts.headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch(url, opts);
+        const data = await res.json().catch(() => null);
+        if (res.status === 401 || res.status === 403) { localStorage.clear(); window.location.replace('login.html'); return null; }
+        if (!res.ok) throw new Error(data?.message || `Error ${res.status}`);
         return data;
     }
 
-    function showAlert(message, type = 'danger') {
-        const alertBox = document.getElementById('alertBox');
-        if (!alertBox) return;
-        alertBox.className = `alert alert-${type} mx-auto mb-3 shadow-sm`;
-        alertBox.innerHTML = message;
-        alertBox.classList.remove('d-none');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function hideAlert() {
-        const alertBox = document.getElementById('alertBox');
-        if (alertBox) alertBox.classList.add('d-none');
+    function alertMsg(msg, type = 'danger') {
+        const b = document.getElementById('alertBox');
+        if (b) { b.className = `alert alert-${type} mb-3`; b.innerHTML = msg; b.classList.remove('d-none'); }
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
         const token = localStorage.getItem('jwt_token') || localStorage.getItem('admin_jwt_token');
-        if (!token) {
-            window.location.replace('login.html');
-            return;
-        }
+        if (!token) return window.location.replace('login.html');
+        modalInst = new bootstrap.Modal(document.getElementById('detailsModal'));
 
-        await loadProfile();
-        await loadEnrollments();
+        try {
+            const admin = await api(`${API}/me`);
+            if (admin) {
+                document.getElementById('adminEmail').textContent = admin.email || 'Admin';
+                document.getElementById('adminEmailText').textContent = admin.email || '-';
+                document.getElementById('adminId').textContent = admin.userId ? `#${admin.userId}` : '-';
+            }
+            loadData();
+        } catch (e) { localStorage.clear(); window.location.replace('login.html'); }
     });
 
-    async function loadProfile() {
+    async function loadData() {
         try {
-            const admin = await apiRequest(`${API_BASE}/me`, { method: 'GET' });
-            if (!admin) return;
+            enrollments = await api(`${API}/enrollments`) || [];
+            let pending = 0, enrolled = 0, declined = 0;
+            enrollments.forEach(e => {
+                const st = (e.statusName || '').toLowerCase();
+                if (st === 'pending' || e.enrollmentStatusId === 5) pending++;
+                else if (st === 'enrolled' || e.enrollmentStatusId === 1) enrolled++;
+                else if (st === 'dropped' || st === 'declined' || e.enrollmentStatusId === 3) declined++;
+            });
 
-            const emailEl = document.getElementById('adminProfileEmail');
-            if (emailEl) emailEl.textContent = admin.email || 'Admin';
+            document.getElementById('statTotal').textContent = enrollments.length;
+            document.getElementById('statPending').textContent = pending;
+            document.getElementById('statEnrolled').textContent = enrolled;
+            document.getElementById('statDeclined').textContent = declined;
 
-            const emailTextEl = document.getElementById('adminProfileEmailText');
-            if (emailTextEl) emailTextEl.textContent = admin.email || '-';
-
-            const idEl = document.getElementById('adminProfileId');
-            if (idEl) idEl.textContent = admin.userId ? `#${admin.userId}` : '-';
-            
-            const badgesContainer = document.getElementById('adminRolesBadges');
-            if (badgesContainer) {
-                badgesContainer.innerHTML = '';
-                (admin.roles || ['Admin']).forEach(r => {
-                    const badge = document.createElement('span');
-                    badge.className = 'badge bg-danger me-1';
-                    badge.textContent = r;
-                    badgesContainer.appendChild(badge);
-                });
-            }
-
-            const statusBadge = document.getElementById('adminStatusBadge');
-            if (statusBadge) {
-                statusBadge.textContent = admin.isActive ? 'Active' : 'Inactive';
-                statusBadge.className = admin.isActive ? 'badge bg-success' : 'badge bg-secondary';
-            }
+            render();
         } catch (err) {
-            logout();
+            document.getElementById('enrollmentsBody').innerHTML = `<tr><td colspan="7" class="text-danger text-center py-3">${err.message}</td></tr>`;
         }
     }
 
-    async function loadEnrollments() {
-        const tbody = document.getElementById('enrollmentsTableBody');
-        if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Loading enrollment requests...</td></tr>`;
-        }
+    function render() {
+        const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+        const tbody = document.getElementById('enrollmentsBody');
 
-        try {
-            const allItems = await apiRequest(`${API_BASE}/enrollments`, { method: 'GET' });
-            if (!allItems) return;
-            allLoadedEnrollments = allItems;
+        const filtered = enrollments.filter(e => {
+            const matchStatus = !activeFilter || String(e.enrollmentStatusId) === activeFilter;
+            const matchQ = !query ||
+                (e.studentName && e.studentName.toLowerCase().includes(query)) ||
+                (e.studentNumber && e.studentNumber.toLowerCase().includes(query)) ||
+                (e.studentEmail && e.studentEmail.toLowerCase().includes(query)) ||
+                (e.courseCode && e.courseCode.toLowerCase().includes(query)) ||
+                (e.courseName && e.courseName.toLowerCase().includes(query));
+            return matchStatus && matchQ;
+        });
 
-            const pendingCount = (allLoadedEnrollments || []).filter(e => 
-                (e.statusName && e.statusName.toLowerCase() === 'pending') || e.enrollmentStatusId === 5
-            ).length;
-            const pendingCountBadge = document.getElementById('pendingCountBadge');
-            if (pendingCountBadge) pendingCountBadge.textContent = pendingCount;
+        tbody.innerHTML = filtered.length === 0 ? '<tr><td colspan="7" class="text-center text-muted py-3">No matching enrollment requests.</td></tr>' : '';
 
-            renderTable();
-        } catch (err) {
-            if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center py-3">${err.message}</td></tr>`;
-            }
-        }
-    }
-
-    function renderTable() {
-        const tbody = document.getElementById('enrollmentsTableBody');
-        if (!tbody) return;
-        const searchTerm = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
-
-        let filtered = allLoadedEnrollments;
-
-        if (currentStatusFilter) {
-            const statusInt = parseInt(currentStatusFilter, 10);
-            filtered = filtered.filter(e => e.enrollmentStatusId === statusInt);
-        }
-
-        if (searchTerm) {
-            filtered = filtered.filter(e => 
-                (e.studentName && e.studentName.toLowerCase().includes(searchTerm)) ||
-                (e.studentNumber && e.studentNumber.toLowerCase().includes(searchTerm)) ||
-                (e.studentEmail && e.studentEmail.toLowerCase().includes(searchTerm)) ||
-                (e.courseCode && e.courseCode.toLowerCase().includes(searchTerm)) ||
-                (e.courseName && e.courseName.toLowerCase().includes(searchTerm)) ||
-                (e.instructorName && e.instructorName.toLowerCase().includes(searchTerm))
-            );
-        }
-
-        const countTextEl = document.getElementById('recordsCountText');
-        if (countTextEl) countTextEl.textContent = `Showing ${filtered.length} of ${allLoadedEnrollments.length} records`;
-
-        if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No enrollment records matching the selected filter criteria.</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = '';
         filtered.forEach(e => {
-            const tr = document.createElement('tr');
             const isPending = (e.statusName && e.statusName.toLowerCase() === 'pending') || e.enrollmentStatusId === 5;
             const isApproved = (e.statusName && e.statusName.toLowerCase() === 'enrolled') || e.enrollmentStatusId === 1;
 
-            let statusBadge = 'bg-secondary';
-            if (isPending) statusBadge = 'bg-warning text-dark';
-            else if (isApproved) statusBadge = 'bg-success';
-            else statusBadge = 'bg-danger';
+            let bClass = isPending ? 'bg-warning text-dark' : isApproved ? 'bg-success' : 'bg-danger';
 
-            const dateStr = e.registrationDate ? new Date(e.registrationDate).toLocaleDateString() : '-';
-
-            let actionButtons = '';
-            if (isPending) {
-                actionButtons = `
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button class="btn btn-success fw-semibold" onclick="approveEnrollment(${e.enrollmentId}, '${e.courseCode}', '${(e.studentName || '').replace(/'/g, "\\'")}')">
-                            Approve
-                        </button>
-                        <button class="btn btn-outline-danger" onclick="declineEnrollment(${e.enrollmentId}, '${e.courseCode}', '${(e.studentName || '').replace(/'/g, "\\'")}')">
-                            Decline
-                        </button>
-                    </div>
-                `;
-            } else if (isApproved) {
-                actionButtons = `
-                    <button class="btn btn-sm btn-outline-danger" onclick="declineEnrollment(${e.enrollmentId}, '${e.courseCode}', '${(e.studentName || '').replace(/'/g, "\\'")}')">
-                        Revoke / Decline
-                    </button>
-                `;
-            } else {
-                actionButtons = `
-                    <button class="btn btn-sm btn-outline-success" onclick="approveEnrollment(${e.enrollmentId}, '${e.courseCode}', '${(e.studentName || '').replace(/'/g, "\\'")}')">
-                        Re-Approve
-                    </button>
-                `;
-            }
-
+            const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><span class="text-muted fw-bold">#${e.enrollmentId}</span></td>
+                <td class="fw-bold text-muted">#${e.enrollmentId}</td>
                 <td>
-                    <div class="fw-bold text-dark">${e.studentName || 'Student'}</div>
-                    <small class="text-muted">${e.studentNumber || '-'} • ${e.studentEmail || '-'}</small>
+                    <div class="fw-semibold">${e.studentName || 'Student'}</div>
+                    <div class="small text-muted">${e.studentNumber || '-'}</div>
                 </td>
                 <td>
                     <span class="badge bg-primary me-1">${e.courseCode || '-'}</span>
-                    <span class="fw-semibold">${e.courseName || '-'}</span>
+                    <span>${e.courseName || '-'}</span>
                 </td>
-                <td><span class="badge bg-light text-dark border">${e.creditHours || 0} hrs</span></td>
-                <td class="text-muted small">${e.instructorName || 'Faculty Assigned'}</td>
-                <td class="text-muted small">${dateStr}</td>
-                <td><span class="badge ${statusBadge}">${e.statusName || 'Unknown'}</span></td>
-                <td class="text-end pe-3">${actionButtons}</td>
+                <td>${e.creditHours || 0} hrs</td>
+                <td class="small text-muted">${e.registrationDate ? new Date(e.registrationDate).toLocaleDateString() : '-'}</td>
+                <td><span class="badge ${bClass}">${e.statusName || 'Unknown'}</span></td>
+                <td class="text-end pe-3">
+                    <button class="btn btn-sm btn-outline-primary py-0 me-1" onclick="showDetails(${e.enrollmentId})">Details</button>
+                    ${isPending ? `
+                        <button class="btn btn-sm btn-success py-0" onclick="updateStatus(${e.enrollmentId}, 'approve')">Approve</button>
+                        <button class="btn btn-sm btn-outline-danger py-0" onclick="updateStatus(${e.enrollmentId}, 'decline')">Decline</button>
+                    ` : isApproved ? `
+                        <button class="btn btn-sm btn-outline-danger py-0" onclick="updateStatus(${e.enrollmentId}, 'decline')">Revoke</button>
+                    ` : `
+                        <button class="btn btn-sm btn-outline-success py-0" onclick="updateStatus(${e.enrollmentId}, 'approve')">Re-Approve</button>
+                    `}
+                </td>
             `;
             tbody.appendChild(tr);
         });
     }
 
-    window.approveEnrollment = async function(id, courseCode, studentName) {
-        hideAlert();
-        try {
-            await apiRequest(`${API_BASE}/enrollments/${id}/approve`, { method: 'PUT' });
-            showAlert(`Enrollment #${id} for ${studentName} (${courseCode}) approved successfully!`, 'success');
-            await loadEnrollments();
-        } catch (err) {
-            showAlert(`Failed to approve enrollment: ${err.message}`, 'danger');
-        }
-    };
-
-    window.declineEnrollment = async function(id, courseCode, studentName) {
-        if (!confirm(`Are you sure you want to decline/drop enrollment #${id} for ${studentName} (${courseCode})?`)) return;
-        hideAlert();
-
-        try {
-            await apiRequest(`${API_BASE}/enrollments/${id}/decline`, { method: 'PUT' });
-            showAlert(`Enrollment #${id} for ${studentName} (${courseCode}) declined.`, 'warning');
-            await loadEnrollments();
-        } catch (err) {
-            showAlert(`Failed to decline enrollment: ${err.message}`, 'danger');
-        }
-    };
-
-    // Filter Buttons
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            currentStatusFilter = e.currentTarget.getAttribute('data-status');
-            renderTable();
+    function setFilter(val) {
+        activeFilter = val;
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            b.classList.toggle('active', b.getAttribute('data-status') === val);
         });
-    });
-
-    document.getElementById('searchInput')?.addEventListener('input', renderTable);
-    document.getElementById('clearSearchBtn')?.addEventListener('click', () => {
-        document.getElementById('searchInput').value = '';
-        renderTable();
-    });
-
-    document.getElementById('refreshBtn')?.addEventListener('click', loadEnrollments);
-
-    function logout() {
-        localStorage.removeItem('jwt_token');
-        localStorage.removeItem('admin_jwt_token');
-        localStorage.removeItem('user_info');
-        window.location.replace('login.html');
+        render();
     }
 
-    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+    function showDetails(id) {
+        const item = enrollments.find(x => x.enrollmentId === id);
+        if (!item) return;
+
+        document.getElementById('mTitle').textContent = `Request #${item.enrollmentId}`;
+        document.getElementById('mStudentName').textContent = item.studentName || '-';
+        document.getElementById('mStudentNum').textContent = item.studentNumber || '-';
+        document.getElementById('mStudentEmail').textContent = item.studentEmail || '-';
+        document.getElementById('mCourseInfo').textContent = `${item.courseCode || ''} - ${item.courseName || '-'}`;
+        document.getElementById('mCourseCredits').textContent = `${item.creditHours || 0} hrs`;
+        document.getElementById('mInstructor').textContent = item.instructorName || 'Faculty';
+        document.getElementById('mStatus').textContent = item.statusName || 'Pending';
+        document.getElementById('mSubDate').textContent = item.registrationDate ? `Submitted: ${new Date(item.registrationDate).toLocaleString()}` : '';
+
+        const isPending = (item.statusName && item.statusName.toLowerCase() === 'pending') || item.enrollmentStatusId === 5;
+        document.getElementById('mActions').innerHTML = isPending ? `
+            <button class="btn btn-sm btn-success me-1" onclick="modalAction(${id}, 'approve')">Approve</button>
+            <button class="btn btn-sm btn-danger" onclick="modalAction(${id}, 'decline')">Decline</button>
+        ` : '';
+
+        modalInst.show();
+    }
+
+    async function updateStatus(id, action) {
+        try {
+            await api(`${API}/enrollments/${id}/${action}`, { method: 'PUT' });
+            alertMsg(`Enrollment #${id} ${action}d successfully.`, 'success');
+            loadData();
+        } catch (e) { alertMsg(`Action failed: ${e.message}`); }
+    }
+
+    async function modalAction(id, action) {
+        modalInst.hide();
+        await updateStatus(id, action);
+    }
+
+    document.querySelectorAll('.filter-btn').forEach(b => b.addEventListener('click', e => setFilter(e.target.getAttribute('data-status'))));
+    document.getElementById('searchInput').addEventListener('input', render);
+    document.getElementById('refreshBtn').addEventListener('click', loadData);
+    document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); window.location.replace('login.html'); });
 </script>
 
 </body>

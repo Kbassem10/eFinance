@@ -34,12 +34,12 @@ public static class DependencyInjection
 
         // 3. ADO.NET Repositories & Unit Of Work
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<IStudentRepository, StudentRepository>();
-        services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<ICoursesRepository, CoursesRepository>();
-        services.AddScoped<IAdminRepository, AdminRepository>();
-        services.AddScoped<ILookupRepository, LookupRepository>();
-        services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<IStudentRepository>(sp => sp.GetRequiredService<IUnitOfWork>().Students);
+        services.AddScoped<IUserRepository>(sp => sp.GetRequiredService<IUnitOfWork>().Users);
+        services.AddScoped<ICoursesRepository>(sp => sp.GetRequiredService<IUnitOfWork>().Courses);
+        services.AddScoped<IAdminRepository>(sp => sp.GetRequiredService<IUnitOfWork>().Admin);
+        services.AddScoped<ILookupRepository>(sp => sp.GetRequiredService<IUnitOfWork>().Lookups);
+        services.AddScoped<IAuthRepository>(sp => sp.GetRequiredService<IUnitOfWork>().Auth);
 
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IDatabaseMigrator, DatabaseMigrator>();
