@@ -226,13 +226,18 @@
         }
     }
 
-    async function loadLookupData() {
+    let searchDebounceTimeout = null;
+
+    async function loadLookupData(searchTerm = '') {
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm text-danger me-2" role="status"></div>Loading ${currentCategory}...</td></tr>`;
 
         try {
             let endpoint = '';
-            if (currentCategory === 'departments' || currentCategory === 'semesters' || currentCategory === 'rooms') {
+            if (currentCategory === 'departments') {
+                const queryParam = searchTerm ? `?departmentCode=${encodeURIComponent(searchTerm)}` : '';
+                endpoint = `${API_BASE}/lookups/departments${queryParam}`;
+            } else if (currentCategory === 'semesters' || currentCategory === 'rooms') {
                 endpoint = `${API_BASE}/lookups/${currentCategory}`;
             } else {
                 endpoint = `${API_BASE}/lookups/status-tables/${currentCategory}`;
@@ -255,7 +260,7 @@
         document.getElementById('currentCategoryText').textContent = getCategoryTitle(currentCategory);
 
         let filtered = currentData;
-        if (searchInput) {
+        if (searchInput && currentCategory !== 'departments') {
             filtered = currentData.filter(item => JSON.stringify(item).toLowerCase().includes(searchInput));
         }
 
@@ -575,10 +580,23 @@
         document.getElementById('refreshBtn').addEventListener('click', loadLookupData);
         document.getElementById('saveItemBtn').addEventListener('click', saveItem);
         document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
-        document.getElementById('searchInput').addEventListener('input', renderTable);
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            if (currentCategory === 'departments') {
+                clearTimeout(searchDebounceTimeout);
+                searchDebounceTimeout = setTimeout(() => {
+                    loadLookupData(e.target.value.trim());
+                }, 300);
+            } else {
+                renderTable();
+            }
+        });
         document.getElementById('clearSearchBtn').addEventListener('click', () => {
             document.getElementById('searchInput').value = '';
-            renderTable();
+            if (currentCategory === 'departments') {
+                loadLookupData('');
+            } else {
+                renderTable();
+            }
         });
 
         document.getElementById('logoutBtn').addEventListener('click', () => {

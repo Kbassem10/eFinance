@@ -11,7 +11,7 @@ public interface ILookupRepository
     Task<IReadOnlyList<LookupItemDto>> GetCourseStatusesAsync(CancellationToken cancellationToken = default);
 
     // Full Management Methods
-    Task<IReadOnlyList<DepartmentDetailsDto>> GetAllDepartmentsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<DepartmentDetailsDto>> GetAllDepartmentsAsync(string departmentCode = "", CancellationToken cancellationToken = default);
     Task<DepartmentDetailsDto?> GetDepartmentByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<int> CreateDepartmentAsync(CreateUpdateDepartmentDto dto, CancellationToken cancellationToken = default);
     Task<bool> UpdateDepartmentAsync(int id, CreateUpdateDepartmentDto dto, CancellationToken cancellationToken = default);

@@ -164,10 +164,17 @@ public class LookupRepository : ILookupRepository
         }
     }
 
-    public async Task<IReadOnlyList<DepartmentDetailsDto>> GetAllDepartmentsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<DepartmentDetailsDto>> GetAllDepartmentsAsync(string departmentCode = "", CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Departments
-            .AsNoTracking()
+        IQueryable<Department> query = _dbContext.Departments.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(departmentCode) && !departmentCode.Equals("ALL", StringComparison.OrdinalIgnoreCase))
+        {
+            var filter = departmentCode.Trim();
+            query = query.Where(d => d.DepartmentCode == filter || d.DepartmentName == filter || EF.Functions.Like(d.DepartmentName, $"%{filter}%") || EF.Functions.Like(d.DepartmentCode, $"%{filter}%"));
+        }
+
+        return await query
             .OrderBy(d => d.DepartmentName)
             .Select(d => new DepartmentDetailsDto(
                 d.DepartmentId,

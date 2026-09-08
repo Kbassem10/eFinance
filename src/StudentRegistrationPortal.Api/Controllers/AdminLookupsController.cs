@@ -25,9 +25,9 @@ public class AdminLookupsController : ControllerBase
     #region Departments
     [HttpGet("departments")]
     [ProducesResponseType(typeof(IReadOnlyList<DepartmentDetailsDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetDepartments(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetDepartments([FromQuery] string departmentCode = "", CancellationToken cancellationToken = default)
     {
-        var result = await _unitOfWork.Lookups.GetAllDepartmentsAsync(cancellationToken);
+        var result = await _unitOfWork.Lookups.GetAllDepartmentsAsync(departmentCode, cancellationToken);
         return Ok(result);
     }
 
