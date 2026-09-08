@@ -1,10 +1,12 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using MySqlConnector;
 using StudentRegistrationPortal.Application.Common.Interfaces;
+using StudentRegistrationPortal.Infrastructure.Persistence.DbContext;
 using StudentRegistrationPortal.Infrastructure.Persistence.Migrations;
 using StudentRegistrationPortal.Infrastructure.Persistence.Repositories;
 using StudentRegistrationPortal.Infrastructure.Services;
@@ -20,11 +22,25 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
 
-        // MySQL ADO.NET Data Source
+        // 1. MySQL ADO.NET Data Source
         services.AddMySqlDataSource(connectionString);
 
-        // Repositories & Unit Of Work
+        // 2. EF Core DbContext Setup (Ready for EF Core & LINQ)
+        services.AddDbContext<ApplicationDbContext>(options =>
+        {
+            var serverVersion = ServerVersion.AutoDetect(connectionString);
+            options.UseMySql(connectionString, serverVersion);
+        });
+
+        // 3. ADO.NET Repositories & Unit Of Work
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IStudentRepository, StudentRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ICoursesRepository, CoursesRepository>();
+        services.AddScoped<IAdminRepository, AdminRepository>();
+        services.AddScoped<ILookupRepository, LookupRepository>();
+        services.AddScoped<IAuthRepository, AuthRepository>();
+
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IDatabaseMigrator, DatabaseMigrator>();
 
@@ -58,4 +74,3 @@ public static class DependencyInjection
         return services;
     }
 }
-
