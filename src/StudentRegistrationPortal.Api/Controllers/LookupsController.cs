@@ -25,8 +25,16 @@ public class LookupsController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<LookupItemDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDepartments([FromQuery] string departmentCode = "", CancellationToken cancellationToken = default)
     {
-        var result = await _unitOfWork.Lookups.GetDepartmentsAsync(departmentCode, cancellationToken);
-        return Ok(result);
+        try
+        {
+            var result = await _unitOfWork.Lookups.GetDepartmentsAsync(departmentCode, cancellationToken);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while fetching departments.");
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+        }
     }
 
     [HttpGet("semesters")]
