@@ -14,13 +14,16 @@ namespace StudentRegistrationPortal.Api.Controllers;
 public class StudentsController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPasswordHasher _passwordHasher;
     private readonly ILogger<StudentsController> _logger;
 
     public StudentsController(
         IUnitOfWork unitOfWork,
+        IPasswordHasher passwordHasher,
         ILogger<StudentsController> logger)
     {
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
     
@@ -196,7 +199,7 @@ public class StudentsController : ControllerBase
         {
             await _unitOfWork.BeginTransactionAsync();
 
-            var passwordHash = BCrypt.Net.BCrypt.EnhancedHashPassword(dto.Password, 11);
+            var passwordHash = _passwordHasher.HashPassword(dto.Password);
             int newUserId = await _unitOfWork.Users.CreateAsync(dto.Email, passwordHash, cancellationToken);
 
             const int studentRoleId = 3; // Student Role

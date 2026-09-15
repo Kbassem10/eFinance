@@ -14,15 +14,18 @@ public class AuthController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IPasswordHasher _passwordHasher;
     private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         IUnitOfWork unitOfWork,
         IJwtTokenService jwtTokenService,
+        IPasswordHasher passwordHasher,
         ILogger<AuthController> logger)
     {
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         _jwtTokenService = jwtTokenService ?? throw new ArgumentNullException(nameof(jwtTokenService));
+        _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -39,7 +42,7 @@ public class AuthController : ControllerBase
         }
 
         var user = await _unitOfWork.Auth.GetUserByEmailAsync(dto.Email, cancellationToken);
-        if (user == null || !BCrypt.Net.BCrypt.EnhancedVerify(dto.Password, user.PasswordHash))
+        if (user == null || !_passwordHasher.VerifyPassword(dto.Password, user.PasswordHash))
         {
             return Unauthorized(new { message = "Invalid email or password." });
         }

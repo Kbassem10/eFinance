@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthRepository>(sp => sp.GetRequiredService<IUnitOfWork>().Auth);
 
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
         services.AddSingleton<IDatabaseMigrator, DatabaseMigrator>();
 
         // JWT Authentication Configuration
